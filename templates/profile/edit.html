@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Profile - TechSphere{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Edit Profile</h1>
+    
+    <form method="POST" class="space-y-6">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
+            <input type="text" name="full_name" value="{{ current_user.full_name }}" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Bio</label>
+            <textarea name="bio" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">{{ current_user.bio or '' }}</textarea>
+        </div>
+        
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Skills</label>
+            <input type="text" name="skills" value="{{ current_user.skills or '' }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., Python, JavaScript, React">
+        </div>
+        
+        <div class="flex gap-4">
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">Save Changes</button>
+            <a href="{{ url_for('profile') }}" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Register Team - {{ event.title }} - TechSphere{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 mb-8">
+        <div class="flex items-center space-x-4 mb-6">
+            <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                <i data-lucide="users" class="w-8 h-8 text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Register Your Team</h1>
+                <p class="text-gray-600 dark:text-gray-400">{{ event.title }}</p>
+            </div>
+        </div>
+        
+        <!-- Event Info -->
+        <div class="grid md:grid-cols-3 gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <div class="text-center">
+                <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ event.min_team_size }}-{{ event.max_team_size }}</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">Team Size</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ event.registration_deadline.strftime('%b %d') }}</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">Registration Deadline</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ event.start_date.strftime('%b %d') }}</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">Event Date</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registration Form -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+        <form method="POST" id="teamRegistrationForm">
+            <!-- Team Name -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Team Name <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="team_name" required
+                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="Enter your team name">
+            </div>
+
+            <!-- Team Leader (Current User) -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Team Leader</label>
+                <div class="flex items-center space-x-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                    <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center">
+                        <span class="text-white font-bold">{{ current_user.full_name[0] if current_user.full_name else 'L' }}</span>
+                    </div>
+                    <div>
+                        <div class="font-medium text-gray-900 dark:text-white">{{ current_user.full_name }}</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">{{ current_user.email }}</div>
+                    </div>
+                    <div class="ml-auto">
+                        <span class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-2 py-1 rounded-full text-xs font-medium">
+                            Team Leader
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Team Members -->
+            <div class="mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Team Members <span class="text-gray-500">({{ event.min_team_size - 1 }} to {{ event.max_team_size - 1 }} members)</span>
+                    </label>
+                    <button type="button" onclick="addMemberField()" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm flex items-center space-x-1">
+                        <i data-lucide="plus" class="w-3 h-3"></i>
+                        <span>Add Member</span>
+                    </button>
+                </div>
+                
+                <div id="membersContainer">
+                    <!-- Initial member fields will be added by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-end space-x-4">
+                <a href="{{ url_for('event_detail', event_id=event.id) }}" 
+                   class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium flex items-center space-x-2">
+                    <i data-lucide="users" class="w-4 h-4"></i>
+                    <span>Register Team</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let memberCount = 0;
+const minMembers = {{ event.min_team_size - 1 }};
+const maxMembers = {{ event.max_team_size - 1 }};
+
+function addMemberField() {
+    if (memberCount >= maxMembers) {
+        alert(`Maximum ${maxMembers} members allowed!`);
+        return;
+    }
+    
+    memberCount++;
+    const container = document.getElementById('membersContainer');
+    const memberDiv = document.createElement('div');
+    memberDiv.className = 'flex space-x-3 mb-3';
+    memberDiv.id = `member-${memberCount}`;
+    
+    memberDiv.innerHTML = `
+        <div class="flex-1">
+            <input type="email" name="member_emails" placeholder="Member email address" required
+                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div class="flex-1">
+            <input type="text" name="member_skills" placeholder="Skills/Role (optional)"
+                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <button type="button" onclick="removeMemberField(${memberCount})" 
+                class="text-red-500 hover:text-red-700 p-2">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+        </button>
+    `;
+    
+    container.appendChild(memberDiv);
+    lucide.createIcons();
+}
+
+function removeMemberField(id) {
+    const memberDiv = document.getElementById(`member-${id}`);
+    if (memberDiv) {
+        memberDiv.remove();
+        memberCount--;
+    }
+}
+
+// Add initial member fields
+document.addEventListener('DOMContentLoaded', function() {
+    for (let i = 0; i < minMembers; i++) {
+        addMemberField();
+    }
+});
+
+// Form validation
+document.getElementById('teamRegistrationForm').addEventListener('submit', function(e) {
+    const emails = document.querySelectorAll('input[name="member_emails"]');
+    const filledEmails = Array.from(emails).filter(input => input.value.trim() !== '');
+    const totalMembers = filledEmails.length + 1; // +1 for leader
+    
+    if (totalMembers < {{ event.min_team_size }} || totalMembers > {{ event.max_team_size }}) {
+        e.preventDefault();
+        alert(`Team size must be between {{ event.min_team_size }} and {{ event.max_team_size }} members!`);
+    }
+});
+
+lucide.createIcons();
+</script>
+{% endblock %}

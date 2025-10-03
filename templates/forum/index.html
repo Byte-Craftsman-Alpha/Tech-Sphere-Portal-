@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Community Forum - TechSphere{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- Header Section -->
+    <div class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex items-center justify-between">
+                <div class="animate-on-scroll">
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
+                        <i data-lucide="message-square" class="w-8 h-8 mr-3 text-purple-600 dark:text-purple-400"></i>
+                        Community Forum
+                    </h1>
+                    <p class="text-gray-600 dark:text-gray-300 mt-2">
+                        Share knowledge, ask questions, and connect with fellow developers
+                    </p>
+                </div>
+                <div class="animate-on-scroll">
+                    <a href="{{ url_for('new_forum_post') }}" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg transition-colors duration-200 flex items-center">
+                        <i data-lucide="plus" class="w-5 h-5 mr-2"></i>
+                        New Discussion
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Categories Sidebar -->
+            <div class="lg:col-span-1">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-on-scroll">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Categories</h2>
+                    <div class="space-y-3">
+                        {% for category in categories %}
+                        <a href="{{ url_for('forum_category', category_id=category.id) }}" class="category-item flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group">
+                            <div class="w-10 h-10 rounded-lg flex items-center justify-center mr-3 {% if category.color == 'blue' %}bg-blue-100 dark:bg-blue-900/30{% elif category.color == 'purple' %}bg-purple-100 dark:bg-purple-900/30{% elif category.color == 'green' %}bg-green-100 dark:bg-green-900/30{% elif category.color == 'orange' %}bg-orange-100 dark:bg-orange-900/30{% else %}bg-red-100 dark:bg-red-900/30{% endif %}">
+                                <i data-lucide="{{ category.icon }}" class="w-5 h-5 {% if category.color == 'blue' %}text-blue-600 dark:text-blue-400{% elif category.color == 'purple' %}text-purple-600 dark:text-purple-400{% elif category.color == 'green' %}text-green-600 dark:text-green-400{% elif category.color == 'orange' %}text-orange-600 dark:text-orange-400{% else %}text-red-600 dark:text-red-400{% endif %}"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">{{ category.name }}</h3>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ category.posts|length }} discussions</p>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Forum Content -->
+            <div class="lg:col-span-3 space-y-6">
+                <!-- Recent Discussions -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 animate-on-scroll">
+                    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                            <i data-lucide="clock" class="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400"></i>
+                            Recent Discussions
+                        </h2>
+                    </div>
+                    <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                        {% if recent_posts %}
+                            {% for post in recent_posts %}
+                            <div class="post-item p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer" onclick="location.href='{{ url_for('forum_post', post_id=post.id) }}'">
+                                <div class="flex items-start space-x-4">
+                                    <!-- Author Avatar -->
+                                    <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <span class="text-white font-medium">{{ post.author.full_name[0] if post.author.full_name else 'U' }}</span>
+                                    </div>
+
+                                    <!-- Post Content -->
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white hover:text-purple-600 dark:hover:text-purple-400 transition-colors line-clamp-1">
+                                                {{ post.title }}
+                                                {% if post.is_pinned %}
+                                                    <i data-lucide="pin" class="w-4 h-4 inline ml-2 text-yellow-500"></i>
+                                                {% endif %}
+                                                {% if post.is_solved %}
+                                                    <i data-lucide="check-circle" class="w-4 h-4 inline ml-2 text-green-500"></i>
+                                                {% endif %}
+                                            </h3>
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if post.category.color == 'blue' %}bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400{% elif post.category.color == 'purple' %}bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400{% elif post.category.color == 'green' %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400{% elif post.category.color == 'orange' %}bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400{% else %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400{% endif %}">
+                                                {{ post.category.name }}
+                                            </span>
+                                        </div>
+
+                                        <!-- Post Meta -->
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                                                <span class="flex items-center">
+                                                    <i data-lucide="user" class="w-4 h-4 mr-1"></i>
+                                                    {{ post.author.full_name }}
+                                                </span>
+                                                <span class="flex items-center">
+                                                    <i data-lucide="clock" class="w-4 h-4 mr-1"></i>
+                                                    {{ post.created_at.strftime('%B %d, %Y') }}
+                                                </span>
+                                            </div>
+
+                                            <!-- Post Stats -->
+                                            <div class="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                                                <span class="flex items-center">
+                                                    <i data-lucide="eye" class="w-4 h-4 mr-1"></i>
+                                                    {{ post.views }}
+                                                </span>
+                                                <span class="flex items-center">
+                                                    <i data-lucide="message-circle" class="w-4 h-4 mr-1"></i>
+                                                    {{ post.comments|length }}
+                                                </span>
+                                                <span class="flex items-center">
+                                                    <i data-lucide="arrow-up" class="w-4 h-4 mr-1 text-green-500"></i>
+                                                    {{ post.upvotes }}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Tags -->
+                                        {% if post.tags %}
+                                        <div class="mt-3 flex flex-wrap gap-2">
+                                            {% for tag in post.tags.split(',') %}
+                                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                                #{{ tag.strip() }}
+                                            </span>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="p-12 text-center">
+                                <i data-lucide="message-square-x" class="w-16 h-16 text-gray-400 mx-auto mb-4"></i>
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No discussions yet</h3>
+                                <p class="text-gray-600 dark:text-gray-400 mb-6">Be the first to start a discussion in our community!</p>
+                                <a href="{{ url_for('new_forum_post') }}" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200">
+                                    Start Discussion
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Forum Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 animate-on-scroll">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                                <i data-lucide="message-square" class="w-6 h-6 text-blue-600 dark:text-blue-400"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Discussions</p>
+                                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ recent_posts|length }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                                <i data-lucide="users" class="w-6 h-6 text-purple-600 dark:text-purple-400"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Active Members</p>
+                                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ active_members }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                                <i data-lucide="check-circle" class="w-6 h-6 text-green-600 dark:text-green-400"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Solved Questions</p>
+                                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ (recent_posts|selectattr('is_solved')|list)|length }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Category hover animations
+    document.querySelectorAll('.category-item').forEach(item => {
+        item.addEventListener('mouseenter', () => {
+            gsap.to(item, { x: 4, duration: 0.2, ease: "power2.out" });
+        });
+        
+        item.addEventListener('mouseleave', () => {
+            gsap.to(item, { x: 0, duration: 0.2, ease: "power2.out" });
+        });
+    });
+
+    // Post item hover animations
+    document.querySelectorAll('.post-item').forEach(item => {
+        item.addEventListener('mouseenter', () => {
+            gsap.to(item, { x: 4, duration: 0.2, ease: "power2.out" });
+        });
+        
+        item.addEventListener('mouseleave', () => {
+            gsap.to(item, { x: 0, duration: 0.2, ease: "power2.out" });
+        });
+    });
+
+    // Staggered animations
+    gsap.from('.animate-on-scroll', {
+        opacity: 0,
+        y: 30,
+        duration: 0.6,
+        stagger: 0.1,
+        ease: "power2.out"
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}All Registrations - Admin{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Event Registrations</h1>
+            <p class="text-gray-600 dark:text-gray-400">Track all event registrations across the platform</p>
+        </div>
+
+        <!-- Event Filter -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
+            <form method="GET" class="flex items-center space-x-4">
+                <div class="flex-1">
+                    <label for="event_filter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter by Event</label>
+                    <select name="event_id" id="event_filter" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <option value="">All Events</option>
+                        {% for event in all_events %}
+                            <option value="{{ event.id }}" {% if request.args.get('event_id') == event.id|string %}selected{% endif %}>
+                                {{ event.title }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                    Filter
+                </button>
+            </form>
+        </div>
+
+        <!-- Team Registrations -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-8">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Team Registrations ({{ team_registrations|length }})</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Event</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Team Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Leader Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Leader Email</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Leader Contact</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Members</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Registered</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for reg in team_registrations %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ reg.event.title }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ reg.team_name }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ reg.team_leader.full_name }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ reg.team_leader.email }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                {{ reg.team_leader.phone_number if reg.team_leader.phone_number else 'N/A' }}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                                <div class="space-y-2">
+                                    {% for member in reg.members %}
+                                    <div class="bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                                        <div class="font-medium">{{ member.user.full_name }}</div>
+                                        <div class="text-xs text-gray-500">{{ member.user.email }}</div>
+                                        <div class="text-xs text-gray-500">{{ member.user.phone_number if member.user.phone_number else 'No contact' }}</div>
+                                        <div class="text-xs text-blue-600">{{ member.role }}</div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ reg.registered_at.strftime('%b %d, %Y') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Individual Registrations -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Individual Registrations ({{ individual_registrations|length }})</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Event</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Participant Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Email</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Contact Number</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Registered</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for reg in individual_registrations %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ reg.event.title }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ reg.user.full_name }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ reg.user.email }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                {{ reg.user.phone_number if reg.user.phone_number else 'N/A' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ reg.registered_at.strftime('%b %d, %Y') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

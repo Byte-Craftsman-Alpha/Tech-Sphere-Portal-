@@ -1,0 +1,660 @@
+{% extends "base.html" %}
+
+{% block title %}{{ event.title }} - TechSphere{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- Hero Section -->
+    <div class="relative bg-gradient-to-r from-blue-600 to-purple-700 text-white overflow-hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-30"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="animate-on-scroll">
+                <!-- Breadcrumb -->
+                <nav class="mb-8">
+                    <ol class="flex items-center space-x-2 text-sm">
+                        <li><a href="{{ url_for('dashboard') }}" class="hover:text-blue-200 transition-colors">Dashboard</a></li>
+                        <li><i data-lucide="chevron-right" class="w-4 h-4"></i></li>
+                        <li><a href="{{ url_for('events') }}" class="hover:text-blue-200 transition-colors">Events</a></li>
+                        <li><i data-lucide="chevron-right" class="w-4 h-4"></i></li>
+                        <li class="text-blue-200">{{ event.title }}</li>
+                    </ol>
+                </nav>
+
+                <!-- Event Header -->
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex-1">
+                        <!-- Event Type Badge -->
+                        <div class="mb-4">
+                            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-white bg-opacity-20 backdrop-blur-sm">
+                                <i data-lucide="{% if event.event_type == 'hackathon' %}code{% elif event.event_type == 'workshop' %}wrench{% elif event.event_type == 'seminar' %}presentation{% else %}trophy{% endif %}" class="w-4 h-4 mr-2"></i>
+                                {{ event.event_type.title() }}
+                            </span>
+                        </div>
+
+                        <!-- Event Title -->
+                        <h1 class="text-4xl lg:text-5xl font-bold mb-4">{{ event.title }}</h1>
+                        
+                        <!-- Event Meta -->
+                        <div class="flex flex-wrap items-center gap-6 text-blue-100">
+                            <div class="flex items-center">
+                                <i data-lucide="calendar" class="w-5 h-5 mr-2"></i>
+                                {{ event.start_date.strftime('%B %d, %Y') }}
+                            </div>
+                            <div class="flex items-center">
+                                <i data-lucide="clock" class="w-5 h-5 mr-2"></i>
+                                {{ event.start_date.strftime('%I:%M %p') }} - {{ event.end_date.strftime('%I:%M %p') }}
+                            </div>
+                            {% if event.venue %}
+                            <div class="flex items-center">
+                                <i data-lucide="map-pin" class="w-5 h-5 mr-2"></i>
+                                {{ event.venue }}
+                            </div>
+                            {% endif %}
+                            {% if event.virtual_link %}
+                            <div class="flex items-center">
+                                <i data-lucide="video" class="w-5 h-5 mr-2"></i>
+                                Virtual Event
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Registration Card -->
+                    <div class="mt-8 lg:mt-0 lg:ml-8">
+                        <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 min-w-[300px]">
+                            <div class="text-center mb-4">
+                                <div class="text-3xl font-bold">{{ registration_count }}</div>
+                                <div class="text-blue-200">
+                                    {% if event.max_participants %}
+                                        of {{ event.max_participants }} registered
+                                    {% else %}
+                                        participants
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <!-- Registration Section -->
+                            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+                                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Registration</h2>
+                                
+                                <!-- Event Registration Info -->
+                                <div class="grid md:grid-cols-3 gap-4 mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                    <div class="text-center">
+                                        <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                                            {% if event.min_team_size > 1 %}
+                                                {{ event.min_team_size }}-{{ event.max_team_size }}
+                                            {% else %}
+                                                Individual
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-sm text-gray-600 dark:text-gray-400">
+                                            {% if event.min_team_size > 1 %}Team Size{% else %}Registration Type{% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-2xl font-bold text-green-600 dark:text-green-400">
+                                            {{ event.registration_deadline.strftime('%b %d') }}
+                                        </div>
+                                        <div class="text-sm text-gray-600 dark:text-gray-400">Registration Deadline</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                                            {% if event.max_participants %}{{ event.max_participants }}{% else %}∞{% endif %}
+                                        </div>
+                                        <div class="text-sm text-gray-600 dark:text-gray-400">Max Participants</div>
+                                    </div>
+                                </div>
+
+                                {% set current_time = utcnow() %}
+                                {% set deadline_passed = current_time > event.registration_deadline %}
+
+                                {% if deadline_passed %}
+                                    <!-- Registration Closed -->
+                                    <div class="text-center p-8 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                                        <i data-lucide="clock" class="w-16 h-16 text-red-400 mx-auto mb-4"></i>
+                                        <h3 class="text-xl font-bold text-red-600 dark:text-red-400 mb-2">Registration Closed</h3>
+                                        <p class="text-red-600 dark:text-red-400">
+                                            Registration deadline was {{ event.registration_deadline.strftime('%B %d, %Y at %I:%M %p') }}
+                                        </p>
+                                    </div>
+                                    {% elif pending_invitations %}
+                                    <!-- Pending Team Invitations -->
+                                    <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800 p-6">
+                                        <div class="flex items-center justify-between mb-4">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-12 h-12 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-full flex items-center justify-center">
+                                                    <i data-lucide="mail" class="w-6 h-6 text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <h3 class="text-lg font-bold text-yellow-800 dark:text-yellow-200">Team Invitation Pending</h3>
+                                                    <p class="text-yellow-600 dark:text-yellow-400">You have {{ pending_invitations|length }} pending team invitation(s)</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="space-y-3 mb-4">
+                                            {% for invitation in pending_invitations %}
+                                            <div class="bg-white dark:bg-gray-700 p-4 rounded-lg border border-yellow-200 dark:border-yellow-700">
+                                                <div class="flex items-center justify-between">
+                                                    <div>
+                                                        <div class="font-medium text-gray-900 dark:text-white">{{ invitation.team_registration.team_name }}</div>
+                                                        <div class="text-sm text-gray-600 dark:text-gray-400">
+                                                            Invited by {{ invitation.invited_by.full_name }}
+                                                        </div>
+                                                        <div class="text-xs text-yellow-600 dark:text-yellow-400">
+                                                            Expires: {{ invitation.expires_at.strftime('%b %d, %Y') }}
+                                                        </div>
+                                                    </div>
+                                                    <a href="{{ url_for('view_team_invitation', event_id=event.id, invitation_id=invitation.id) }}" 
+                                                       class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                                                        View Invitation
+                                                    </a>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        
+                                        <div class="text-sm text-yellow-700 dark:text-yellow-300">
+                                            <i data-lucide="info" class="w-4 h-4 inline mr-1"></i>
+                                            You cannot register for other teams while you have pending invitations. Please respond to your invitations first.
+                                        </div>
+                                    </div>
+                                {% elif user_team_membership %}
+                                    <!-- User is Team Member (Read-only view) -->
+                                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 p-6">
+                                        <div class="flex items-center justify-between mb-4">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                                                    <i data-lucide="users" class="w-6 h-6 text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <h3 class="text-lg font-bold text-blue-800 dark:text-blue-200">Team Member</h3>
+                                                    <p class="text-blue-600 dark:text-blue-400">{{ user_team_membership.team_registration.team_name }}</p>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ user_team_membership.team_registration.members|length }}</div>
+                                                <div class="text-sm text-blue-600 dark:text-blue-400">Team Members</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Team Members List -->
+                                        <div class="space-y-2 mb-4">
+                                            {% for member in user_team_membership.team_registration.members %}
+                                            <div class="flex items-center space-x-3 p-2 bg-white dark:bg-gray-700 rounded-lg">
+                                                <div class="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                                                    <span class="text-white text-xs font-bold">{{ member.user.full_name[0] if member.user.full_name else 'U' }}</span>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <div class="text-sm font-medium text-gray-900 dark:text-white">{{ member.user.full_name }}</div>
+                                                    {% if member.skills %}
+                                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ member.skills }}</div>
+                                                    {% endif %}
+                                                </div>
+                                                {% if member.role == 'leader' %}
+                                                <span class="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-1 rounded-full text-xs font-medium">
+                                                    Leader
+                                                </span>
+                                                {% else %}
+                                                <span class="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 px-2 py-1 rounded-full text-xs font-medium">
+                                                    Member
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        
+                                        <!-- Action Buttons for Team Members -->
+                                        <div class="flex space-x-3">
+                                            {% if user_team_membership.role != 'leader' %}
+                                            <form method="POST" action="{{ url_for('quit_team', event_id=event.id) }}" class="flex-1" 
+                                                  onsubmit="return confirm('Are you sure you want to leave this team?')">
+                                                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2">
+                                                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                                                    <span>Leave Team</span>
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                            {% if event.virtual_link %}
+                                            <a href="{{ event.virtual_link }}" target="_blank" 
+                                               class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-center font-medium transition-colors flex items-center justify-center space-x-2">
+                                                <i data-lucide="external-link" class="w-4 h-4"></i>
+                                                <span>Join Event</span>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Team Leader Info -->
+                                        <div class="mt-4 p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                            <div class="flex items-center space-x-2 text-blue-700 dark:text-blue-300">
+                                                <i data-lucide="info" class="w-4 h-4"></i>
+                                                <span class="text-sm">
+                                                    {% if user_team_membership.role == 'leader' %}
+                                                        You are the team leader. Use the edit registration option to modify team details.
+                                                    {% else %}
+                                                        Only the team leader can modify registration details. Contact {{ user_team_membership.team_registration.team_leader.full_name }} for changes.
+                                                    {% endif %}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% elif team_registration %}
+                                    <!-- Team Already Registered -->
+                                    <div class="bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 p-6">
+                                        <div class="flex items-center justify-between mb-4">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center">
+                                                    <i data-lucide="users" class="w-6 h-6 text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <h3 class="text-lg font-bold text-green-800 dark:text-green-200">Team Registered!</h3>
+                                                    <p class="text-green-600 dark:text-green-400">{{ team_registration.team_name }}</p>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ team_registration.members|length }}</div>
+                                                <div class="text-sm text-green-600 dark:text-green-400">Team Members</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Team Members -->
+                                        <div class="space-y-2 mb-4">
+                                            {% for member in team_registration.members %}
+                                            <div class="flex items-center space-x-3 p-2 bg-white dark:bg-gray-700 rounded-lg">
+                                                <div class="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                                                    <span class="text-white text-xs font-bold">{{ member.user.full_name[0] if member.user.full_name else 'U' }}</span>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <div class="text-sm font-medium text-gray-900 dark:text-white">{{ member.user.full_name }}</div>
+                                                    {% if member.skills %}
+                                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ member.skills }}</div>
+                                                    {% endif %}
+                                                </div>
+                                                {% if member.role == 'leader' %}
+                                                <span class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-2 py-1 rounded-full text-xs font-medium">
+                                                    Leader
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        
+                                        <!-- Action Buttons -->
+                                        <div class="flex space-x-3">
+                                            <a href="{{ url_for('edit_event_registration', registration_id=team_registration.id) }}" 
+                                            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-center font-medium transition-colors flex items-center justify-center space-x-2">
+                                                <i data-lucide="edit" class="w-4 h-4"></i>
+                                                <span>Edit Registration</span>
+                                            </a>
+                                            {% if event.virtual_link %}
+                                            <a href="{{ event.virtual_link }}" target="_blank" 
+                                            class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-center font-medium transition-colors flex items-center justify-center space-x-2">
+                                                <i data-lucide="external-link" class="w-4 h-4"></i>
+                                                <span>Join Event</span>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Deadline Warning -->
+                                        {% set days_left = (event.registration_deadline - current_time).days %}
+                                        {% if days_left <= 3 and days_left > 0 %}
+                                        <div class="mt-4 p-3 bg-red-100 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                                            <div class="flex items-center space-x-2 text-red-600 dark:text-red-400">
+                                                <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                                                <span class="font-medium">Urgent: Registration closes in {{ days_left }} day{{ 's' if days_left != 1 else '' }}!</span>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                {% elif is_registered %}
+                                    <!-- Individual Registration (Legacy) -->
+                                    <div class="text-center">
+                                        <div class="bg-green-500 bg-opacity-20 text-green-200 px-4 py-2 rounded-lg mb-4">
+                                            <i data-lucide="check-circle" class="w-5 h-5 inline mr-2"></i>
+                                            You're Registered!
+                                        </div>
+                                        {% if event.virtual_link %}
+                                        <a href="{{ event.virtual_link }}" target="_blank" class="w-full bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors duration-200 inline-block">
+                                            <i data-lucide="external-link" class="w-5 h-5 inline mr-2"></i>
+                                            Join Event
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <!-- Registration Available -->
+                                    <div class="text-center">
+                                        {% if event.min_team_size > 1 %}
+                                            <!-- Team Registration -->
+                                            <div class="mb-6">
+                                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Team Registration Required</h3>
+                                                <p class="text-gray-600 dark:text-gray-400 mb-4">
+                                                    Form a team of {{ event.min_team_size }}-{{ event.max_team_size }} members to participate in this event.
+                                                </p>
+                                            </div>
+                                            
+                                            <a href="{{ url_for('register_event_team', event_id=event.id) }}" 
+                                            class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-semibold transition-colors duration-200 inline-flex items-center space-x-2 text-lg">
+                                                <i data-lucide="users" class="w-5 h-5"></i>
+                                                <span>Register Team</span>
+                                            </a>
+                                        {% else %}
+                                            <!-- Individual Registration -->
+                                            <form method="POST" action="{{ url_for('register_event', event_id=event.id) }}" class="inline">
+                                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-semibold transition-colors duration-200 inline-flex items-center space-x-2 text-lg">
+                                                    <i data-lucide="user-plus" class="w-5 h-5"></i>
+                                                    <span>Register Now</span>
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                        
+                                        <!-- Registration Info -->
+                                        <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                                            <p>
+                                                <i data-lucide="calendar" class="w-4 h-4 inline mr-1"></i>
+                                                Registration deadline: {{ event.registration_deadline.strftime('%B %d, %Y at %I:%M %p') }}
+                                            </p>
+                                            {% if event.max_participants %}
+                                            <p class="mt-1">
+                                                <i data-lucide="users" class="w-4 h-4 inline mr-1"></i>
+                                                Limited to {{ event.max_participants }} participants
+                                            </p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Content -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Description -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 animate-on-scroll">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                        <i data-lucide="file-text" class="w-6 h-6 mr-2 text-blue-600 dark:text-blue-400"></i>
+                        About This Event
+                    </h2>
+                    <div class="prose dark:prose-invert max-w-none">
+                        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">{{ event.description }}</p>
+                    </div>
+                </div>
+
+                <!-- Rules & Guidelines -->
+                {% if event.rules %}
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 animate-on-scroll">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                        <i data-lucide="book-open" class="w-6 h-6 mr-2 text-purple-600 dark:text-purple-400"></i>
+                        Rules & Guidelines
+                    </h2>
+                    <div class="prose dark:prose-invert max-w-none">
+                        <p class="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">{{ event.rules }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Prizes -->
+                {% if event.prizes %}
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 animate-on-scroll">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                        <i data-lucide="trophy" class="w-6 h-6 mr-2 text-yellow-600 dark:text-yellow-400"></i>
+                        Prizes & Rewards
+                    </h2>
+                    <div class="prose dark:prose-invert max-w-none">
+                        <p class="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">{{ event.prizes }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Event Resources -->
+                {% if event.resources %}
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 animate-on-scroll">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                        <i data-lucide="download" class="w-6 h-6 mr-2 text-green-600 dark:text-green-400"></i>
+                        Resources & Downloads
+                    </h2>
+                    <div class="space-y-4">
+                        {% for resource in event.resources %}
+                        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mr-4">
+                                    <i data-lucide="{% if resource.resource_type == 'pdf' %}file-text{% elif resource.resource_type == 'video' %}play{% elif resource.resource_type == 'code' %}code{% else %}link{% endif %}" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-gray-900 dark:text-white">{{ resource.title }}</h3>
+                                    {% if resource.description %}
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ resource.description }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if resource.external_link %}
+                            <a href="{{ resource.external_link }}" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                                <i data-lucide="external-link" class="w-4 h-4 inline mr-1"></i>
+                                Open
+                            </a>
+                            {% elif resource.file_path %}
+                            <a href="{{ url_for('static', filename='uploads/' + resource.file_path) }}" download class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                                <i data-lucide="download" class="w-4 h-4 inline mr-1"></i>
+                                Download
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-8">
+                <!-- Event Details -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-on-scroll">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                        <i data-lucide="info" class="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400"></i>
+                        Event Details
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Start Date</dt>
+                            <dd class="text-sm text-gray-900 dark:text-white">{{ event.start_date.strftime('%A, %B %d, %Y at %I:%M %p') }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">End Date</dt>
+                            <dd class="text-sm text-gray-900 dark:text-white">{{ event.end_date.strftime('%A, %B %d, %Y at %I:%M %p') }}</dd>
+                        </div>
+                        {% if event.venue %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Venue</dt>
+                            <dd class="text-sm text-gray-900 dark:text-white">{{ event.venue }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if event.registration_deadline %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Registration Deadline</dt>
+                            <dd class="text-sm text-gray-900 dark:text-white">{{ event.registration_deadline.strftime('%B %d, %Y at %I:%M %p') }}</dd>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Organizer</dt>
+                            <dd class="text-sm text-gray-900 dark:text-white">{{ event.creator.full_name }}</dd>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Participants -->
+                {% if event.registrations %}
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-on-scroll">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                        <i data-lucide="users" class="w-5 h-5 mr-2 text-green-600 dark:text-green-400"></i>
+                        Participants ({{ (event.registrations|length) + (event.team_registrations|length) }})
+                    </h3>
+                    <div class="space-y-3">
+                        {% for registration in event.registrations[:10] %}
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span class="text-white text-xs font-medium">{{ registration.user.full_name[0] if registration.user.full_name else 'U' }}</span>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ registration.user.full_name }}</p>
+                                {% if registration.team_name %}
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Team: {{ registration.team_name }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% if event.registrations|length > 10 %}
+                        <p class="text-xs text-gray-500 dark:text-gray-400 text-center pt-2">
+                            +{{ event.registrations|length - 10 }} more participants
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Share Event -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-on-scroll">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                        <i data-lucide="share-2" class="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400"></i>
+                        Share Event
+                    </h3>
+                    <div class="flex space-x-2">
+                        <button onclick="shareEvent('twitter')" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+                            <i data-lucide="twitter" class="w-4 h-4 inline mr-1"></i>
+                            Twitter
+                        </button>
+                        <button onclick="shareEvent('linkedin')" class="flex-1 bg-blue-700 hover:bg-blue-800 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+                            <i data-lucide="linkedin" class="w-4 h-4 inline mr-1"></i>
+                            LinkedIn
+                        </button>
+                        <button onclick="copyEventLink()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+                            <i data-lucide="copy" class="w-4 h-4 inline mr-1"></i>
+                            Copy
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Registration Modal -->
+<div id="registrationModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Register for Event</h3>
+                <button onclick="closeRegistrationModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <form method="POST" action="{{ url_for('register_event', event_id=event.id) }}">
+                <div class="space-y-4">
+                    {% if event.event_type == 'hackathon' %}
+                    <div>
+                        <label for="team_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Team Name (Optional)
+                        </label>
+                        <input type="text" id="team_name" name="team_name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter your team name">
+                    </div>
+                    {% endif %}
+
+                    <div>
+                        <label for="additional_info" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Additional Information (Optional)
+                        </label>
+                        <textarea id="additional_info" name="additional_info" rows="3" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Any additional information or questions..."></textarea>
+                    </div>
+                </div>
+
+                <div class="flex space-x-4 mt-6">
+                    <button type="button" onclick="closeRegistrationModal()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                        Register
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Registration modal functions
+    function openRegistrationModal() {
+        const modal = document.getElementById('registrationModal');
+        modal.classList.remove('hidden');
+        gsap.fromTo(modal.querySelector('.bg-white'), 
+            { opacity: 0, scale: 0.9 }, 
+            { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" }
+        );
+    }
+
+    function closeRegistrationModal() {
+        const modal = document.getElementById('registrationModal');
+        gsap.to(modal.querySelector('.bg-white'), {
+            opacity: 0,
+            scale: 0.9,
+            duration: 0.2,
+            ease: "power2.in",
+            onComplete: () => modal.classList.add('hidden')
+        });
+    }
+
+    // Share functions
+    function shareEvent(platform) {
+        const url = encodeURIComponent(window.location.href);
+        const title = encodeURIComponent('{{ event.title }} - TechSphere');
+        
+        let shareUrl;
+        if (platform === 'twitter') {
+            shareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${title}`;
+        } else if (platform === 'linkedin') {
+            shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
+        }
+        
+        window.open(shareUrl, '_blank', 'width=600,height=400');
+    }
+
+    function copyEventLink() {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            // Show success message
+            const btn = event.target.closest('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="check" class="w-4 h-4 inline mr-1"></i>Copied!';
+            lucide.createIcons();
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                lucide.createIcons();
+            }, 2000);
+        });
+    }
+
+    // Close modal on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeRegistrationModal();
+        }
+    });
+
+    // Close modal on backdrop click
+    document.getElementById('registrationModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) {
+            closeRegistrationModal();
+        }
+    });
+
+    // Page animations
+    gsap.timeline()
+        .from('.animate-on-scroll', { opacity: 0, y: 30, duration: 0.8, stagger: 0.2, ease: "power2.out" });
+</script>
+{% endblock %}

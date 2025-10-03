@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}{{ team.name }} - Team Details - TechSphere{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Team Header -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 mb-8">
+        <div class="flex justify-between items-start mb-6">
+            <div class="flex-1">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">{{ team.name }}</h1>
+                <p class="text-gray-600 dark:text-gray-300 mb-4">{{ team.description or "No description provided" }}</p>
+
+                <!-- Team Leader Info -->
+                <div class="flex items-center space-x-4 mb-4">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="crown" class="w-5 h-5 text-yellow-500"></i>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Leader:</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                            <span class="text-white text-sm font-medium">{{ team.leader.full_name[0] if team.leader.full_name else 'L' }}</span>
+                        </div>
+                        <span class="font-medium text-gray-900 dark:text-white">{{ team.leader.full_name }}</span>
+                    </div>
+                </div>
+
+                <!-- Team Stats -->
+                <div class="flex items-center space-x-6 text-sm text-gray-600 dark:text-gray-400">
+                    <div class="flex items-center space-x-1">
+                        <i data-lucide="users" class="w-4 h-4"></i>
+                        <span>{{ members|length }} members</span>
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <i data-lucide="calendar" class="w-4 h-4"></i>
+                        <span>Created {{ team.created_at.strftime('%B %d, %Y') }}</span>
+                    </div>
+                    {% if team.max_members %}
+                    <div class="flex items-center space-x-1">
+                        <i data-lucide="user-check" class="w-4 h-4"></i>
+                        <span>Max {{ team.max_members }} members</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col space-y-3 ml-6">
+                {% if not is_member %}
+                    {% if pending_request %}
+                        <button class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2" disabled>
+                            <i data-lucide="clock" class="w-4 h-4"></i>
+                            <span>Request Pending</span>
+                        </button>
+                    {% else %}
+                        <button onclick="showJoinModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+                            <i data-lucide="user-plus" class="w-4 h-4"></i>
+                            <span>Join Team</span>
+                        </button>
+                    {% endif %}
+                {% endif %}
+
+                {% if is_member %}
+                    {% if is_member.role == 'leader' %}
+                        <button onclick="showInviteModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+                            <i data-lucide="user-plus" class="w-4 h-4"></i>
+                            <span>Invite Members</span>
+                        </button>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Team Members -->
+        <div class="lg:col-span-2">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Team Members</h2>
+
+                {% if members %}
+                    <div class="space-y-3">
+                        {% for member, user in members %}
+                            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                                        <span class="text-white font-medium">{{ user.full_name[0] if user.full_name else 'U' }}</span>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-medium text-gray-900 dark:text-white">{{ user.full_name }}</h3>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">{{ member.role|title }}</p>
+                                    </div>
+                                </div>
+
+                                {% if is_member and is_member.role == 'leader' and member.role != 'leader' %}
+                                    <div class="flex items-center space-x-2">
+                                        <!-- Role Update Form -->
+                                        <form method="POST" action="{{ url_for('update_member_role', team_id=team.id, member_id=member.id) }}" class="flex items-center space-x-2">
+                                            <select name="role" class="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                                <option value="member" {% if member.role == 'member' %}selected{% endif %}>Member</option>
+                                                <option value="frontend_dev" {% if member.role == 'frontend_dev' %}selected{% endif %}>Frontend Dev</option>
+                                                <option value="backend_dev" {% if member.role == 'backend_dev' %}selected{% endif %}>Backend Dev</option>
+                                                <option value="fullstack_dev" {% if member.role == 'fullstack_dev' %}selected{% endif %}>Fullstack Dev</option>
+                                                <option value="designer" {% if member.role == 'designer' %}selected{% endif %}>Designer</option>
+                                                <option value="devops" {% if member.role == 'devops' %}selected{% endif %}>DevOps</option>
+                                                <option value="qa" {% if member.role == 'qa' %}selected{% endif %}>QA</option>
+                                                <option value="pm" {% if member.role == 'pm' %}selected{% endif %}>Project Manager</option>
+                                            </select>
+                                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                                                Update
+                                            </button>
+                                        </form>
+
+                                        <!-- Remove Member Form -->
+                                        <form method="POST" action="{{ url_for('remove_member', team_id=team.id, member_id=member.id) }}" onsubmit="return confirm('Are you sure you want to remove this member?')">
+                                            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-sm">
+                                                <i data-lucide="user-minus" class="w-4 h-4"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-gray-600 dark:text-gray-400 text-center py-8">No team members yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="lg:col-span-1">
+            {% if is_member and is_member.role == 'leader' %}
+                <!-- Join Requests -->
+                {% if join_requests %}
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Join Requests</h3>
+                        <div class="space-y-3">
+                            {% for request, user in join_requests %}
+                                <div class="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                                    <div class="flex items-center space-x-3 mb-2">
+                                        <div class="w-8 h-8 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
+                                            <span class="text-white text-sm font-medium">{{ user.full_name[0] if user.full_name else 'U' }}</span>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-medium text-gray-900 dark:text-white">{{ user.full_name }}</h4>
+                                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ request.created_at.strftime('%b %d') }}</p>
+                                        </div>
+                                    </div>
+                                    {% if request.message %}
+                                        <p class="text-sm text-gray-700 dark:text-gray-300 mb-3">{{ request.message }}</p>
+                                    {% endif %}
+                                    <div class="flex space-x-2">
+                                        <form method="POST" action="{{ url_for('handle_join_request', team_id=team.id, request_id=request.id, action='approve') }}" class="flex-1">
+                                            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm">
+                                                Approve
+                                            </button>
+                                        </form>
+                                        <form method="POST" action="{{ url_for('handle_join_request', team_id=team.id, request_id=request.id, action='reject') }}" class="flex-1">
+                                            <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm">
+                                                Reject
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Team Discussion -->
+    {% if is_member %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mt-8">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Team Discussion</h2>
+
+            <!-- Messages -->
+            <div class="space-y-4 mb-6 max-h-96 overflow-y-auto">
+                {% for message, user in messages %}
+                    <div class="flex space-x-3">
+                        <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-white text-sm font-medium">{{ user.full_name[0] if user.full_name else 'U' }}</span>
+                        </div>
+                        <div class="flex-1">
+                            <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-3">
+                                <div class="flex items-center space-x-2 mb-1">
+                                    <h4 class="font-medium text-gray-900 dark:text-white">{{ user.full_name }}</h4>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ message.created_at.strftime('%b %d, %H:%M') }}</span>
+                                    {% if current_user.is_admin %}
+                                        <form method="POST" action="{{ url_for('delete_team_message', team_id=team.id, message_id=message.id) }}" class="ml-auto" onsubmit="return confirm('Delete this message?')">
+                                            <button type="submit" class="text-red-500 hover:text-red-700">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                                <p class="text-gray-700 dark:text-gray-300">{{ message.message }}</p>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Message Form -->
+            <form method="POST" action="{{ url_for('send_team_message', team_id=team.id) }}" class="flex space-x-3">
+                <input type="text" name="message" placeholder="Type your message..." required
+                       class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                    <span>Send</span>
+                </button>
+            </form>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Join Team Modal -->
+<div id="joinModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 w-full max-w-md">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">Request to Join Team</h3>
+                <button onclick="hideJoinModal()" class="text-gray-400 hover:text-gray-600">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <form method="POST" action="{{ url_for('join_team', team_id=team.id) }}">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Message (Optional)</label>
+                    <textarea name="message" rows="3" placeholder="Tell the team leader why you want to join..."
+                              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+
+                <div class="flex space-x-3">
+                    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg">
+                        Send Request
+                    </button>
+                    <button type="button" onclick="hideJoinModal()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Modal functions
+function showJoinModal() {
+    document.getElementById('joinModal').classList.remove('hidden');
+    lucide.createIcons();
+}
+
+function hideJoinModal() {
+    document.getElementById('joinModal').classList.add('hidden');
+}
+
+// Initialize icons
+lucide.createIcons();
+</script>
+{% endblock %}

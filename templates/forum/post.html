@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post.title }} - TechSphere{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Post Header -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 mb-8">
+        <div class="flex items-start justify-between mb-6">
+            <div class="flex items-center space-x-4">
+                <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                    <span class="text-white text-xl font-bold">{{ post.author.full_name[0] if post.author.full_name else 'U' }}</span>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ post.author.full_name }}</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ post.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                    <div class="flex items-center space-x-4 mt-1">
+                        <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                            <i data-lucide="eye" class="w-3 h-3 mr-1"></i>{{ post.views }} views
+                        </span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                            <i data-lucide="message-circle" class="w-3 h-3 mr-1"></i>{{ comments|length }} comments
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <!-- Post Voting -->
+                <div class="flex items-center space-x-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
+                    <button onclick="votePost({{ post.id }}, 'upvote')" class="flex items-center space-x-1 text-green-600 hover:text-green-700">
+                        <i data-lucide="thumbs-up" class="w-4 h-4"></i>
+                        <span id="post-upvotes">{{ post.upvotes }}</span>
+                    </button>
+                    <button onclick="votePost({{ post.id }}, 'downvote')" class="flex items-center space-x-1 text-red-600 hover:text-red-700">
+                        <i data-lucide="thumbs-down" class="w-4 h-4"></i>
+                        <span id="post-downvotes">{{ post.downvotes }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">{{ post.title }}</h1>
+        <div class="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-relaxed">
+            {{ post.content|nl2br }}
+        </div>
+        
+        {% if post.tags %}
+        <div class="mt-6 flex flex-wrap gap-2">
+            {% for tag in post.tags.split(',') %}
+            <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-sm rounded-full">
+                {{ tag.strip() }}
+            </span>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Comments Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+        <div class="flex items-center justify-between mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+                Comments <span class="text-lg font-normal text-gray-500">({{ comments|length }})</span>
+            </h2>
+        </div>
+        
+        <!-- Add Comment Form -->
+        <div class="mb-8 p-6 bg-gray-50 dark:bg-gray-700 rounded-xl">
+            <form method="POST" action="{{ url_for('add_forum_comment', post_id=post.id) }}">
+                <div class="flex space-x-4">
+                    <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="text-white text-sm font-bold">{{ current_user.full_name[0] if current_user.full_name else 'U' }}</span>
+                    </div>
+                    <div class="flex-1">
+                        <textarea name="content" rows="4" placeholder="Share your thoughts..." required
+                                  class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                        <div class="flex justify-end mt-3">
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2">
+                                <i data-lucide="send" class="w-4 h-4"></i>
+                                <span>Post Comment</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Comments List -->
+        {% if comments %}
+            <div class="space-y-6">
+                {% for comment in comments %}
+                <div class="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-b-0">
+                    <!-- Main Comment -->
+                    <div class="flex space-x-4">
+                        <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-white font-bold">{{ comment.author.full_name[0] if comment.author.full_name else 'U' }}</span>
+                        </div>
+                        <div class="flex-1">
+                            <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center space-x-3">
+                                        <h4 class="font-bold text-gray-900 dark:text-white">{{ comment.author.full_name }}</h4>
+                                        <span class="text-sm text-gray-500 dark:text-gray-400">{{ comment.created_at.strftime('%B %d, %Y at %I:%M %p') }}</span>
+                                        {% if comment.is_accepted %}
+                                        <span class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-2 py-1 rounded-full text-xs font-medium flex items-center">
+                                            <i data-lucide="check-circle" class="w-3 h-3 mr-1"></i>
+                                            Accepted Answer
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                    {% if current_user.is_admin or comment.author_id == current_user.id %}
+                                    <form method="POST" action="{{ url_for('delete_forum_comment', comment_id=comment.id) }}" 
+                                          onsubmit="return confirm('Are you sure you want to delete this comment?')" class="inline">
+                                        <button type="submit" class="text-red-500 hover:text-red-700 p-1 rounded">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                                <div class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+                                    {{ comment.content|nl2br }}
+                                </div>
+                                
+                                <!-- Comment Voting and Actions -->
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="flex items-center space-x-2 bg-white dark:bg-gray-600 rounded-lg px-3 py-1">
+                                            <button onclick="voteComment({{ comment.id }}, 'upvote')" 
+                                                    class="flex items-center space-x-1 text-green-600 hover:text-green-700 transition-colors">
+                                                <i data-lucide="thumbs-up" class="w-3 h-3"></i>
+                                                <span id="comment-{{ comment.id }}-upvotes" class="text-sm font-medium">{{ comment.upvotes }}</span>
+                                            </button>
+                                            <div class="w-px h-4 bg-gray-300 dark:bg-gray-500"></div>
+                                            <button onclick="voteComment({{ comment.id }}, 'downvote')" 
+                                                    class="flex items-center space-x-1 text-red-600 hover:text-red-700 transition-colors">
+                                                <i data-lucide="thumbs-down" class="w-3 h-3"></i>
+                                                <span id="comment-{{ comment.id }}-downvotes" class="text-sm font-medium">{{ comment.downvotes }}</span>
+                                            </button>
+                                        </div>
+                                        <button onclick="toggleReplyForm({{ comment.id }})" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm font-medium flex items-center space-x-1">
+                                            <i data-lucide="message-circle" class="w-3 h-3"></i>
+                                            <span>Reply</span>
+                                        </button>
+                                    </div>
+                                    {% if current_user.id == post.author_id and not comment.is_accepted %}
+                                    <button class="text-green-600 hover:text-green-700 text-sm font-medium flex items-center space-x-1">
+                                        <i data-lucide="check-circle" class="w-3 h-3"></i>
+                                        <span>Mark as Answer</span>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Reply Form (Hidden by default) -->
+                            <div id="reply-form-{{ comment.id }}" class="mt-4 ml-4 hidden">
+                                <form method="POST" action="{{ url_for('reply_forum_comment', comment_id=comment.id) }}">
+                                    <div class="flex space-x-3">
+                                        <div class="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                            <span class="text-white text-xs font-bold">{{ current_user.full_name[0] if current_user.full_name else 'U' }}</span>
+                                        </div>
+                                        <div class="flex-1">
+                                            <textarea name="content" rows="3" placeholder="Write a reply..." required
+                                                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"></textarea>
+                                            <div class="flex justify-end space-x-2 mt-2">
+                                                <button type="button" onclick="toggleReplyForm({{ comment.id }})" class="px-3 py-1 text-gray-600 hover:text-gray-800 text-sm">Cancel</button>
+                                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-sm">Reply</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <!-- Nested Replies -->
+                            {% if comment.replies %}
+                            <div class="mt-4 ml-8 space-y-4">
+                                {% for reply in comment.replies %}
+                                <div class="flex space-x-3">
+                                    <div class="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <span class="text-white text-xs font-bold">{{ reply.author.full_name[0] if reply.author.full_name else 'U' }}</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="bg-gray-100 dark:bg-gray-600 rounded-lg p-3">
+                                            <div class="flex items-center justify-between mb-2">
+                                                <div class="flex items-center space-x-2">
+                                                    <h5 class="font-medium text-gray-900 dark:text-white text-sm">{{ reply.author.full_name }}</h5>
+                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ reply.created_at.strftime('%B %d, %Y at %I:%M %p') }}</span>
+                                                </div>
+                                                {% if current_user.is_admin or reply.author_id == current_user.id %}
+                                                <form method="POST" action="{{ url_for('delete_forum_comment', comment_id=reply.id) }}" 
+                                                      onsubmit="return confirm('Are you sure you want to delete this reply?')" class="inline">
+                                                    <button type="submit" class="text-red-500 hover:text-red-700 p-1 rounded">
+                                                        <i data-lucide="trash-2" class="w-3 h-3"></i>
+                                                    </button>
+                                                </form>
+                                                {% endif %}
+                                            </div>
+                                            <div class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed mb-2">
+                                                {{ reply.content|nl2br }}
+                                            </div>
+                                            <div class="flex items-center space-x-2">
+                                                <div class="flex items-center space-x-1 bg-white dark:bg-gray-500 rounded px-2 py-1">
+                                                    <button onclick="voteComment({{ reply.id }}, 'upvote')" 
+                                                            class="flex items-center space-x-1 text-green-600 hover:text-green-700">
+                                                        <i data-lucide="thumbs-up" class="w-2 h-2"></i>
+                                                        <span id="comment-{{ reply.id }}-upvotes" class="text-xs">{{ reply.upvotes }}</span>
+                                                    </button>
+                                                    <div class="w-px h-3 bg-gray-300"></div>
+                                                    <button onclick="voteComment({{ reply.id }}, 'downvote')" 
+                                                            class="flex items-center space-x-1 text-red-600 hover:text-red-700">
+                                                        <i data-lucide="thumbs-down" class="w-2 h-2"></i>
+                                                        <span id="comment-{{ reply.id }}-downvotes" class="text-xs">{{ reply.downvotes }}</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-12">
+                <div class="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="message-circle" class="w-10 h-10 text-gray-400"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No comments yet</h3>
+                <p class="text-gray-500 dark:text-gray-400">Be the first to share your thoughts on this post!</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Toggle reply form visibility
+function toggleReplyForm(commentId) {
+    const replyForm = document.getElementById(`reply-form-${commentId}`);
+    if (replyForm.classList.contains('hidden')) {
+        replyForm.classList.remove('hidden');
+        replyForm.querySelector('textarea').focus();
+    } else {
+        replyForm.classList.add('hidden');
+    }
+}
+
+// Vote on post
+function votePost(postId, voteType) {
+    fetch(`/api/forum/vote`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            post_id: postId,
+            vote_type: voteType
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.upvotes !== undefined) {
+            document.getElementById('post-upvotes').textContent = data.upvotes;
+            document.getElementById('post-downvotes').textContent = data.downvotes;
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// Vote on comment
+function voteComment(commentId, voteType) {
+    fetch(`/api/forum/comment/${commentId}/vote`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            vote_type: voteType
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.upvotes !== undefined) {
+            document.getElementById(`comment-${commentId}-upvotes`).textContent = data.upvotes;
+            document.getElementById(`comment-${commentId}-downvotes`).textContent = data.downvotes;
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// Initialize Lucide icons
+lucide.createIcons();
+</script>
+{% endblock %}

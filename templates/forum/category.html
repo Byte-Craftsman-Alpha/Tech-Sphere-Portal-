@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}{{ category.name }} - TechSphere{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Category Header -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
+        <div class="flex items-center space-x-4">
+            <div class="w-16 h-16 rounded-lg flex items-center justify-center {% if category.color == 'blue' %}bg-blue-100 dark:bg-blue-900/30{% elif category.color == 'purple' %}bg-purple-100 dark:bg-purple-900/30{% elif category.color == 'green' %}bg-green-100 dark:bg-green-900/30{% elif category.color == 'orange' %}bg-orange-100 dark:bg-orange-900/30{% else %}bg-red-100 dark:bg-red-900/30{% endif %}">
+                <i data-lucide="{{ category.icon }}" class="w-8 h-8 {% if category.color == 'blue' %}text-blue-600 dark:text-blue-400{% elif category.color == 'purple' %}text-purple-600 dark:text-purple-400{% elif category.color == 'green' %}text-green-600 dark:text-green-400{% elif category.color == 'orange' %}text-orange-600 dark:text-orange-400{% else %}text-red-600 dark:text-red-400{% endif %}"></i>
+            </div>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">{{ category.name }}</h1>
+                <p class="text-gray-600 dark:text-gray-400">{{ category.description }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Posts -->
+    <div class="space-y-4">
+        {% if posts %}
+            {% for post in posts %}
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow cursor-pointer" onclick="location.href='{{ url_for('forum_post', post_id=post.id) }}'">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">{{ post.title }}</h3>
+                        <p class="text-gray-600 dark:text-gray-400 mb-3">{{ post.content[:150] }}{% if post.content|length > 150 %}...{% endif %}</p>
+                        <div class="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                            <span>By {{ post.author.full_name }}</span>
+                            <span>{{ post.created_at.strftime('%B %d, %Y') }}</span>
+                            <span><i data-lucide="eye" class="w-4 h-4 inline mr-1"></i>{{ post.views }}</span>
+                            <span><i data-lucide="thumbs-up" class="w-4 h-4 inline mr-1"></i>{{ post.upvotes }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-12">
+                <i data-lucide="message-square-x" class="w-16 h-16 text-gray-400 mx-auto mb-4"></i>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No posts in this category yet</h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-6">Be the first to start a discussion!</p>
+                <a href="{{ url_for('new_forum_post') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200">
+                    Start Discussion
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

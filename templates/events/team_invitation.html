@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Team Invitation - {{ event.title }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="users" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Team Invitation</h1>
+                <p class="text-gray-600 dark:text-gray-400">You've been invited to join a team</p>
+            </div>
+
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 mb-8">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Invitation Details</h2>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Event:</span>
+                        <span class="font-medium text-gray-900 dark:text-white">{{ event.title }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Team Name:</span>
+                        <span class="font-medium text-gray-900 dark:text-white">{{ invitation.team_registration.team_name }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Invited by:</span>
+                        <span class="font-medium text-gray-900 dark:text-white">{{ invitation.invited_by.full_name }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Role:</span>
+                        <span class="font-medium text-gray-900 dark:text-white">{{ invitation.role.title() }}</span>
+                    </div>
+                    {% if invitation.skills %}
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Skills:</span>
+                        <span class="font-medium text-gray-900 dark:text-white">{{ invitation.skills }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Expires:</span>
+                        <span class="font-medium text-gray-900 dark:text-white">{{ invitation.expires_at.strftime('%B %d, %Y at %I:%M %p') }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex space-x-4">
+                <form method="POST" action="{{ url_for('accept_team_invitation', event_id=event.id, invitation_id=invitation.id) }}" class="flex-1">
+                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                        <i data-lucide="check" class="w-5 h-5 inline mr-2"></i>
+                        Accept Invitation
+                    </button>
+                </form>
+                <form method="POST" action="{{ url_for('reject_team_invitation', event_id=event.id, invitation_id=invitation.id) }}" class="flex-1">
+                    <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                        <i data-lucide="x" class="w-5 h-5 inline mr-2"></i>
+                        Decline Invitation
+                    </button>
+                </form>
+            </div>
+
+            <div class="mt-6 text-center">
+                <a href="{{ url_for('event_detail', event_id=event.id) }}" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">
+                    Back to Event Details
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

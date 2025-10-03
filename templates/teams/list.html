@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Teams - TechSphere{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Teams</h1>
+        <a href="{{ url_for('create_team') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg flex items-center space-x-2">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Create Team</span>
+        </a>
+    </div>
+    
+    {% if teams %}
+        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {% for team_data in teams %}
+            {% set team = team_data.team %}
+            {% set leader = team_data.leader %}
+            {% set member_count = team_data.member_count %}
+            {% set is_member = team_data.is_member %}
+            {% set pending_request = team_data.pending_request %}
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+                <!-- Team Header -->
+                <div class="mb-4">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ team.name }}</h3>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm line-clamp-2">{{ team.description or "No description provided" }}</p>
+                </div>
+
+                <!-- Team Leader -->
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                        <span class="text-white text-sm font-medium">{{ leader.full_name[0] if leader.full_name else 'L' }}</span>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ leader.full_name }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                            <i data-lucide="crown" class="w-3 h-3 mr-1 text-yellow-500"></i>
+                            Team Leader
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Team Stats -->
+                <div class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    <div class="flex items-center space-x-1">
+                        <i data-lucide="users" class="w-4 h-4"></i>
+                        <span>{{ member_count }} member{{ 's' if member_count != 1 else '' }}</span>
+                    </div>
+                    {% if team.max_members %}
+                    <div class="flex items-center space-x-1">
+                        <i data-lucide="user-check" class="w-4 h-4"></i>
+                        <span>Max {{ team.max_members }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex space-x-2">
+                    <a href="{{ url_for('team_detail', team_id=team.id) }}" 
+                       class="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white px-4 py-2 rounded-lg text-center text-sm font-medium transition-colors">
+                        View Details
+                    </a>
+                    
+                    {% if not is_member %}
+                        {% if pending_request %}
+                            <button class="flex-1 bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-medium cursor-not-allowed" disabled>
+                                <i data-lucide="clock" class="w-4 h-4 inline mr-1"></i>
+                                Pending
+                            </button>
+                        {% else %}
+                            <form method="POST" action="{{ url_for('join_team', team_id=team.id) }}" class="flex-1">
+                                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                                    <i data-lucide="user-plus" class="w-4 h-4 inline mr-1"></i>
+                                    Join
+                                </button>
+                            </form>
+                        {% endif %}
+                    {% else %}
+                        <span class="flex-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-4 py-2 rounded-lg text-center text-sm font-medium">
+                            <i data-lucide="check" class="w-4 h-4 inline mr-1"></i>
+                            Member
+                        </span>
+                    {% endif %}
+                </div>
+
+                <!-- Created Date -->
+                <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                        <i data-lucide="calendar" class="w-3 h-3 mr-1"></i>
+                        Created {{ team.created_at.strftime('%b %d, %Y') }}
+                    </p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-12">
+            <div class="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="users" class="w-12 h-12 text-gray-400"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No teams available yet</h3>
+            <p class="text-gray-500 dark:text-gray-400 mb-6">Be the first to create a team and start collaborating!</p>
+            <a href="{{ url_for('create_team') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg inline-flex items-center space-x-2">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>Create First Team</span>
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+// Initialize Lucide icons
+lucide.createIcons();
+</script>
+{% endblock %}

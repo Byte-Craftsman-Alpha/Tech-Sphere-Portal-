@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Team Registration - TechSphere{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 mb-8">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-600 rounded-full flex items-center justify-center">
+                    <i data-lucide="edit" class="w-8 h-8 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Edit Team Registration</h1>
+                    <p class="text-gray-600 dark:text-gray-400">{{ registration.event.title }}</p>
+                </div>
+            </div>
+            
+            {% if deadline_passed %}
+            <div class="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 px-4 py-2 rounded-lg">
+                <i data-lucide="clock" class="w-4 h-4 inline mr-1"></i>
+                Registration Deadline Passed
+            </div>
+            {% else %}
+            <div class="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-4 py-2 rounded-lg">
+                <i data-lucide="alert-triangle" class="w-4 h-4 inline mr-1"></i>
+                Deadline: {{ registration.event.registration_deadline.strftime('%b %d, %Y at %I:%M %p') }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Current Team Info -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 mb-8">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Current Team: {{ registration.team_name }}</h2>
+        
+        <div class="space-y-3">
+            {% for member in registration.members %}
+            <div class="flex items-center space-x-3 p-3 {% if member.role == 'leader' %}bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800{% else %}bg-gray-50 dark:bg-gray-700{% endif %} rounded-lg">
+                <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                    <span class="text-white text-sm font-bold">{{ member.user.full_name[0] if member.user.full_name else 'U' }}</span>
+                </div>
+                <div class="flex-1">
+                    <div class="font-medium text-gray-900 dark:text-white">{{ member.user.full_name }}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">{{ member.user.email }}</div>
+                    {% if member.skills %}
+                    <div class="text-xs text-gray-500 dark:text-gray-400">Skills: {{ member.skills }}</div>
+                    {% endif %}
+                </div>
+                <div>
+                    {% if member.role == 'leader' %}
+                    <span class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-2 py-1 rounded-full text-xs font-medium">
+                        Team Leader
+                    </span>
+                    {% else %}
+                    <span class="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-1 rounded-full text-xs font-medium">
+                        Member
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Edit Form -->
+    {% if not deadline_passed %}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Update Team Details</h2>
+        
+        <form method="POST" id="editRegistrationForm">
+            <!-- Team Name -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Team Name <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="team_name" value="{{ registration.team_name }}" required
+                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <!-- Team Members -->
+            <div class="mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Update Team Members
+                    </label>
+                    <button type="button" onclick="addMemberField()" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm flex items-center space-x-1">
+                        <i data-lucide="plus" class="w-3 h-3"></i>
+                        <span>Add Member</span>
+                    </button>
+                </div>
+                
+                <div id="membersContainer">
+                    {% for member in registration.members %}
+                        {% if member.role != 'leader' %}
+                        <div class="flex space-x-3 mb-3">
+                            <div class="flex-1">
+                                <input type="email" name="member_emails" value="{{ member.user.email }}"
+                                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div class="flex-1">
+                                <input type="text" name="member_skills" value="{{ member.skills or '' }}" placeholder="Skills/Role (optional)"
+                                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <button type="button" onclick="this.parentElement.remove()" 
+                                    class="text-red-500 hover:text-red-700 p-2">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-between">
+                <form method="POST" action="{{ url_for('unregister_event_team', registration_id=registration.id) }}" 
+                    onsubmit="return confirm('Are you sure you want to unregister your team? This action cannot be undone.')" class="inline">
+                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium">
+                        Unregister Team
+                    </button>
+                </form>
+                
+                <div class="space-x-4">
+                    <a href="{{ url_for('event_detail', event_id=registration.event_id) }}" 
+                       class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium">
+                        Update Registration
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    {% else %}
+    <div class="bg-gray-100 dark:bg-gray-700 rounded-xl p-8 text-center">
+        <i data-lucide="lock" class="w-16 h-16 text-gray-400 mx-auto mb-4"></i>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Registration Locked</h3>
+        <p class="text-gray-600 dark:text-gray-400">The registration deadline has passed. No changes can be made.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+let memberCount = {{ registration.members|length - 1 }};
+
+function addMemberField() {
+    memberCount++;
+    const container = document.getElementById('membersContainer');
+    const memberDiv = document.createElement('div');
+    memberDiv.className = 'flex space-x-3 mb-3';
+    
+    memberDiv.innerHTML = `
+        <div class="flex-1">
+            <input type="email" name="member_emails" placeholder="Member email address"
+                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div class="flex-1">
+            <input type="text" name="member_skills" placeholder="Skills/Role (optional)"
+                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <button type="button" onclick="this.parentElement.remove()" 
+                class="text-red-500 hover:text-red-700 p-2">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+        </button>
+    `;
+    
+    container.appendChild(memberDiv);
+    lucide.createIcons();
+}
+
+lucide.createIcons();
+</script>
+{% endblock %}
