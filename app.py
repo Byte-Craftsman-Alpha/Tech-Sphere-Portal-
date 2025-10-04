@@ -103,4 +103,5 @@ if __name__ == '__main__':
         # Create sample data
         create_sample_data()
     
-    app.run(debug=True)
+
+    #app.run(debug=True)
