@@ -80,28 +80,29 @@ def create_sample_data():
     
     db.session.commit()
 
-if __name__ == '__main__':
-    app = create_app()
-    
-    with app.app_context():
-        db.create_all()
-        
-        # Create admin user if it doesn't exist
-        from models import User
-        admin = User.query.filter_by(email='admin@techsphere.com').first()
-        if not admin:
-            admin = User(
-                username='admin',
-                email='admin@techsphere.com',
-                password_hash=generate_password_hash('admin123'),
-                is_admin=True,
-                full_name='System Administrator'
-            )
-            db.session.add(admin)
-            db.session.commit()
-        
-        # Create sample data
-        create_sample_data()
-    
+#if __name__ == '__main__':
+app = create_app()
 
-    #app.run(debug=True)
+with app.app_context():
+    db.create_all()
+    
+    # Create admin user if it doesn't exist
+    from models import User
+    admin = User.query.filter_by(email='admin@techsphere.com').first()
+    if not admin:
+        admin = User(
+            username='admin',
+            email='admin@techsphere.com',
+            password_hash=generate_password_hash('admin123'),
+            is_admin=True,
+            full_name='System Administrator'
+        )
+        db.session.add(admin)
+        db.session.commit()
+    
+    # Create sample data
+    create_sample_data()
+
+
+#app.run(debug=True)
+
