@@ -109,6 +109,8 @@ DROP POLICY IF EXISTS "Events are viewable by everyone" ON ts_v2025_events;
 CREATE POLICY "Events are viewable by everyone" ON ts_v2025_events FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Admins can manage events" ON ts_v2025_events;
+DROP POLICY IF EXISTS "Admins can update events" ON ts_v2025_events;
+DROP POLICY IF EXISTS "Admins can delete events" ON ts_v2025_events;
 CREATE POLICY "Admins can manage events" ON ts_v2025_events
 FOR INSERT WITH CHECK (
   EXISTS (SELECT 1 FROM ts_v2025_profiles p WHERE p.id = auth.uid() AND p.role = 'admin')

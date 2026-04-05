@@ -200,7 +200,7 @@ async function runSetup() {
 
     if (profError) {
       const msg = String(profError.message || '');
-      if (msg.includes('schema cache') && databaseUrl) {
+      if ((msg.includes('schema cache') || msg.includes('permission denied')) && databaseUrl) {
         try {
           const client = await connectWithFallback(databaseUrl, poolerUrl || undefined);
           await client.query(
@@ -211,7 +211,7 @@ async function runSetup() {
             [adminId, adminEmail, 'admin', 'Admin']
           );
           await client.end();
-          console.warn('Admin profile synced via direct DB (schema cache pending).');
+          console.warn('Admin profile synced via direct DB (RLS bypass).');
         } catch (err: any) {
           console.error('Profile Error:', err.message);
         }

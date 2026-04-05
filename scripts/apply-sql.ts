@@ -79,13 +79,25 @@ export async function applySql(databaseUrl: string) {
 
     // 1. Load SQL files
     const sqlDir = process.cwd();
-    const setupSql = fs.readFileSync(path.join(sqlDir, 'full_db_setup.sql'), 'utf8');
+    let setupSql = fs.readFileSync(path.join(sqlDir, 'full_db_setup.sql'), 'utf8');
     
     // 2. Execute SQL
     console.log('📜 Applying database schema (tables, RLS, triggers)...');
     
-    // Split by ';' and filter out empty lines to avoid basic syntax issues with multi-statement strings
-    // Note: This is a simple runner. For production, a more robust migration tool is better.
+    // Remove known duplicate-policy errors by dropping problematic policies pre-run.
+    // Guard with to_regclass so brand-new DBs don't error.
+    const prelude = `
+      do $$
+      begin
+        if to_regclass('public.ts_v2025_events') is not null then
+          drop policy if exists "Admins can manage events" on ts_v2025_events;
+          drop policy if exists "Admins can update events" on ts_v2025_events;
+          drop policy if exists "Admins can delete events" on ts_v2025_events;
+        end if;
+      end $$;
+    `;
+    setupSql = prelude + '\n' + setupSql;
+
     await client.query(setupSql);
     
     console.log('✅ Database schema applied successfully!');

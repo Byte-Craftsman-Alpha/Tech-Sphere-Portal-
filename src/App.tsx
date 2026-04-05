@@ -53,15 +53,15 @@ const App = () => {
 
   const fetchProfile = async (session: any) => {
     try {
-      const userId = session.user.id;
-      const { data, error } = await supabase
-        .from('ts_v2025_profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle(); // Safe: handles missing profile without 406 error
-      
-      if (error) throw error;
-      
+      const res = await fetch('/api/profile', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Profile fetch failed');
+
       if (data) {
         // Auto-sync Google avatar if profile doesn't have one
         const metaAvatar = session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture;

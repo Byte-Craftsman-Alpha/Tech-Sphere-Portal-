@@ -237,19 +237,18 @@ const AdminUsers = () => {
     }
 
     try {
-      const { error: updateError } = await supabase
-        .from('ts_v2025_profiles')
-        .update(finalUpdates)
-        .eq('id', selectedUser.id);
-
-      if (updateError) {
-        if (updateError.message.includes("column 'points'")) {
-          alert('XP column is missing! Please run the SQL command provided in the guide.');
-          return;
-        }
-        throw updateError;
-      }
-      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No active session');
+      const res = await fetch('/api/admin-update-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ user_id: selectedUser.id, updates: finalUpdates })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Update failed');
       setSelectedUser(null);
       fetchUsers();
     } catch (err: any) {

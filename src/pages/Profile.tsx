@@ -34,22 +34,23 @@ const Profile = () => {
 
   const fetchProfile = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data, error } = await supabase
-          .from('ts_v2025_profiles')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle(); // Better: handle zero rows gracefully
-        
-        if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const res = await fetch('/api/profile', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Profile fetch failed');
 
         if (data) {
           setProfile(data);
           setFormData(data);
         } else {
           // No profile row yet! Create a local fallback to allow UI to render
-          const fallback = { id: user.id, email: user.email, full_name: user.user_metadata?.full_name || 'New User', role: 'user' };
+          const fallback = { id: session.user.id, email: session.user.email, full_name: session.user.user_metadata?.full_name || 'New User', role: 'user' };
           setProfile(fallback);
           setFormData(fallback);
         }
