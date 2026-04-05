@@ -16,6 +16,10 @@ const Events = () => {
   const [showForm, setShowForm] = useState<any>(null);
   const [formResponses, setFormResponses] = useState<any>({});
   const [formErrors, setFormErrors] = useState<any>({});
+  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+  const [availableTeams, setAvailableTeams] = useState<any[]>([]);
+  const [optionsLoading, setOptionsLoading] = useState(false);
+  const [profileInfo, setProfileInfo] = useState<any>(null);
 
   useEffect(() => {
     fetchData();
@@ -68,6 +72,87 @@ const Events = () => {
       .map((o) => o.trim())
       .filter(Boolean);
 
+  const hydrateDefaults = (event: any, existing: any = {}) => {
+    const responses = { ...existing };
+    (event.custom_form || []).forEach((field: any) => {
+      if (responses[field.id] === undefined && field.default_value !== undefined && field.default_value !== '') {
+        responses[field.id] = field.default_value;
+      }
+    });
+    return responses;
+  };
+
+  const fetchDynamicOptions = async () => {
+    setOptionsLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase
+        .from('ts_v2025_profiles')
+        .select('full_name, email, roll_no, semester, branch, whatsapp, avatar_url, github_url, linkedin_url, instagram')
+        .eq('id', user?.id || '')
+        .maybeSingle();
+      const { data: teamMember } = await supabase
+        .from('ts_v2025_team_members')
+        .select('status, team:ts_v2025_teams(name)')
+        .eq('user_id', user?.id || '')
+        .eq('status', 'approved')
+        .maybeSingle();
+      const enrichedProfile = {
+        ...(profile || {}),
+        team_name: teamMember?.team?.name || ''
+      };
+      setProfileInfo(enrichedProfile);
+
+      const { data: users } = await supabase
+        .from('ts_v2025_profiles')
+        .select('id, full_name, email')
+        .eq('approved', true)
+        .order('full_name', { ascending: true });
+      const userList = users || [];
+      setAvailableUsers(userList);
+
+      const { data: teams } = await supabase
+        .from('ts_v2025_teams')
+        .select('id, name')
+        .order('name', { ascending: true });
+      const teamList = teams || [];
+      setAvailableTeams(teamList);
+
+      if (showForm) {
+        setFormResponses((prev: any) => {
+          const next = { ...prev };
+          (showForm.custom_form || []).forEach((field: any) => {
+            if (next[field.id]) return;
+            if (field.type === 'profile_field' && field.profile_key && enrichedProfile) {
+              next[field.id] = enrichedProfile[field.profile_key] || '';
+              return;
+            }
+            if (field.type === 'user_select' && field.default_value) {
+              const match = userList.find((u: any) =>
+                u.id === field.default_value ||
+                u.email?.toLowerCase() === String(field.default_value).toLowerCase() ||
+                u.full_name?.toLowerCase() === String(field.default_value).toLowerCase()
+              );
+              if (match) next[field.id] = match.id;
+            }
+            if (field.type === 'team_select' && field.default_value) {
+              const match = teamList.find((t: any) =>
+                t.id === field.default_value ||
+                t.name?.toLowerCase() === String(field.default_value).toLowerCase()
+              );
+              if (match) next[field.id] = match.id;
+            }
+          });
+          return next;
+        });
+      }
+    } catch (err: any) {
+      console.error('Failed loading dynamic options:', err.message || err);
+    } finally {
+      setOptionsLoading(false);
+    }
+  };
+
   const normalizeUniqueValue = (value: any) => {
     if (Array.isArray(value)) {
       return value.map((v) => String(v).trim().toLowerCase()).filter(Boolean).join('|');
@@ -76,10 +161,10 @@ const Events = () => {
     return String(value).trim().toLowerCase();
   };
 
-  const validateForm = async (event: any) => {
+  const validateForm = async (event: any, responses: any = formResponses) => {
     const errors: any = {};
     event.custom_form?.forEach((field: any) => {
-      const value = formResponses[field.id];
+      const value = responses[field.id];
       const isEmpty = Array.isArray(value) ? value.length === 0 : !value;
       if (field.required && isEmpty) errors[field.id] = 'This field is required';
     });
@@ -106,7 +191,7 @@ const Events = () => {
 
     const existingId = getPass(event.id)?.id;
     uniqueFields.forEach((field: any) => {
-      const valueKey = normalizeUniqueValue(formResponses[field.id]);
+      const valueKey = normalizeUniqueValue(responses[field.id]);
       if (!valueKey) return;
       const conflict = (existingRegs || []).find((reg: any) => {
         if (reg.id === existingId) return false;
@@ -120,6 +205,36 @@ const Events = () => {
     return Object.keys(errors).length === 0;
   };
 
+  const getProfileSnapshot = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    const { data: profile } = await supabase
+      .from('ts_v2025_profiles')
+      .select('full_name, email, roll_no, semester, branch, whatsapp, avatar_url, github_url, linkedin_url, instagram')
+      .eq('id', user.id)
+      .maybeSingle();
+    const { data: teamMember } = await supabase
+      .from('ts_v2025_team_members')
+      .select('status, team:ts_v2025_teams(name)')
+      .eq('user_id', user.id)
+      .eq('status', 'approved')
+      .maybeSingle();
+    return {
+      ...(profile || {}),
+      team_name: teamMember?.team?.name || ''
+    };
+  };
+
+  const applyProfileOverrides = (event: any, responses: any, snapshot: any) => {
+    const next = { ...responses };
+    (event.custom_form || []).forEach((field: any) => {
+      if (field.type === 'profile_field' && field.profile_key) {
+        next[field.id] = snapshot?.[field.profile_key] || '';
+      }
+    });
+    return next;
+  };
+
   const handleRegister = async (event: any) => {
     const isClosed = (event.pass_settings?.is_open ?? event.is_open) === false;
     if (isClosed) return;
@@ -127,11 +242,19 @@ const Events = () => {
     if (event.custom_form?.length > 0 && !showForm) {
       const existing = getPass(event.id);
       setShowForm(event);
-      setFormResponses(existing?.form_responses || {});
+      setFormResponses(hydrateDefaults(event, existing?.form_responses || {}));
       setFormErrors({});
+      await fetchDynamicOptions();
       return;
     }
-    if (showForm && !(await validateForm(showForm))) return;
+    let finalResponses = formResponses;
+    if (showForm) {
+      const profileSnapshot = (profileInfo || await getProfileSnapshot());
+      const lockedResponses = applyProfileOverrides(showForm, formResponses, profileSnapshot);
+      setFormResponses(lockedResponses);
+      if (!(await validateForm(showForm, lockedResponses))) return;
+      finalResponses = lockedResponses;
+    }
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
     setLoading(true);
@@ -142,11 +265,11 @@ const Events = () => {
         event_id: event.id, 
         status: 'registered', 
         qr_data: `pass_${session.user.id}_${event.id}`, 
-        form_responses: formResponses || {}
+        form_responses: finalResponses || {}
       };
       let error;
       if (existing) {
-        const { error: updateError } = await supabase.from('ts_v2025_registrations').update({ status: 'registered', form_responses: formResponses || {} }).eq('id', existing.id);
+        const { error: updateError } = await supabase.from('ts_v2025_registrations').update({ status: 'registered', form_responses: finalResponses || {} }).eq('id', existing.id);
         error = updateError;
       } else {
         const { error: insertError } = await supabase.from('ts_v2025_registrations').insert(payload);
@@ -287,13 +410,47 @@ const Events = () => {
                 return (
                   <div key={field.id} className="space-y-1">
                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{field.label}</label>
-                    {field.type === 'textarea' ? (
+                    {(field.type === 'user_select' || field.type === 'team_select') && optionsLoading && (
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Loading options...</div>
+                    )}
+                    {field.type === 'profile_field' ? (
+                      <div className="inline-flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-100 rounded-xl text-xs font-bold text-indigo-700 uppercase tracking-wider">
+                        <Icon icon="solar:lock-keyhole-minimalistic-bold" fontSize={14} />
+                        <span className="truncate max-w-[220px]">{value || 'Not set'}</span>
+                      </div>
+                    ) : field.type === 'textarea' ? (
                       <textarea
                         rows={4}
                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm"
                         value={value || ''}
                         onChange={(e) => setFormResponses({ ...formResponses, [field.id]: e.target.value })}
                       />
+                    ) : field.type === 'user_select' ? (
+                      <select
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                        value={value || ''}
+                        onChange={(e) => setFormResponses({ ...formResponses, [field.id]: e.target.value })}
+                      >
+                        <option value="">{field.default_value ? 'Default Selected' : 'Select user'}</option>
+                        {availableUsers.map((user: any) => (
+                          <option key={user.id} value={user.id}>
+                            {user.full_name || user.email || user.id}
+                          </option>
+                        ))}
+                      </select>
+                    ) : field.type === 'team_select' ? (
+                      <select
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                        value={value || ''}
+                        onChange={(e) => setFormResponses({ ...formResponses, [field.id]: e.target.value })}
+                      >
+                        <option value="">{field.default_value ? 'Default Selected' : 'Select team'}</option>
+                        {availableTeams.map((team: any) => (
+                          <option key={team.id} value={team.id}>
+                            {team.name || team.id}
+                          </option>
+                        ))}
+                      </select>
                     ) : field.type === 'select' ? (
                       <select
                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm"

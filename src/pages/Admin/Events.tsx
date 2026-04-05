@@ -161,7 +161,20 @@ const AdminEvents = () => {
   };
 
   const addFormField = () => {
-    setCustomForm([...customForm, { id: crypto.randomUUID(), label: '', type: 'text', required: false, options: '', regex: '', constraint: 'none' }]);
+    setCustomForm([
+      ...customForm,
+      {
+        id: crypto.randomUUID(),
+        label: '',
+        type: 'text',
+        required: false,
+        options: '',
+        regex: '',
+        constraint: 'none',
+        default_value: '',
+        profile_key: ''
+      }
+    ]);
   };
 
   const updateFormField = (id: string, field: string, value: any) => {
@@ -557,6 +570,9 @@ const AdminEvents = () => {
                                 <option value="select">Dropdown</option>
                                 <option value="radio">Radio Options</option>
                                 <option value="checkbox">Checkboxes</option>
+                                <option value="user_select">User Select</option>
+                                <option value="team_select">Team Select</option>
+                                <option value="profile_field">Profile Field (Read-only)</option>
                               </select>
                             </div>
                             <div className="w-full md:w-36 space-y-1">
@@ -598,6 +614,41 @@ const AdminEvents = () => {
                                 onChange={e => updateFormField(field.id, 'options', e.target.value)} 
                                 placeholder="Apple, Banana, Orange" 
                               />
+                            </div>
+                          )}
+
+                          {field.type !== 'profile_field' && (
+                            <div className="space-y-1 animate-in slide-in-from-top-2 duration-200">
+                              <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Default Value</label>
+                              <input
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium"
+                                value={field.default_value || ''}
+                                onChange={e => updateFormField(field.id, 'default_value', e.target.value)}
+                                placeholder={field.type === 'user_select' ? 'User ID or email' : field.type === 'team_select' ? 'Team ID or name' : 'Default value'}
+                              />
+                            </div>
+                          )}
+
+                          {field.type === 'profile_field' && (
+                            <div className="space-y-1 animate-in slide-in-from-top-2 duration-200">
+                              <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Profile Field</label>
+                              <select
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium"
+                                value={field.profile_key || ''}
+                                onChange={e => updateFormField(field.id, 'profile_key', e.target.value)}
+                              >
+                                <option value="">Select profile field</option>
+                                <option value="full_name">User Name</option>
+                                <option value="roll_no">User Roll Number</option>
+                                <option value="semester">User Semester</option>
+                                <option value="branch">User Branch</option>
+                                <option value="email">User Email</option>
+                                <option value="whatsapp">User Whatsapp Number</option>
+                                <option value="github_url">User Github</option>
+                                <option value="linkedin_url">User Linkedin</option>
+                                <option value="instagram">User Instagram</option>
+                                <option value="team_name">User Team</option>
+                              </select>
                             </div>
                           )}
                         </div>
@@ -769,7 +820,7 @@ const AdminEvents = () => {
                       onClick={() => { handleExportExcel(); setTrackingMenuOpen(false); }}
                       className="w-full px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-widest text-green-600 hover:bg-green-50 flex items-center gap-2"
                     >
-                      <Icon icon="solar:file-excel-bold" /> Export Excel
+                      <Icon icon="mdi:file-excel" fontSize={14} /> Export Excel
                     </button>
                     <button
                       onClick={() => { setShowTracking(false); setTrackingMenuOpen(false); }}
