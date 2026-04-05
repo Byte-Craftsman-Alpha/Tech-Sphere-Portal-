@@ -31,6 +31,22 @@ body {
   @apply bg-[#F6F8FB] text-[#1A2230] antialiased;
 }
 
+.iconify {
+  font-size: 0.9em !important;
+}
+
+* {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}
+
+.animate-spin,
+.animate-pulse {
+  animation: none !important;
+}
+
 .minimals-card {
   @apply bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200;
 }
