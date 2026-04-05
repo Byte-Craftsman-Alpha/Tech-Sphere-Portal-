@@ -28,6 +28,7 @@ const App = () => {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -256,7 +257,7 @@ const App = () => {
         {/* Desktop Sidebar */}
         <aside className={`fixed inset-y-0 left-0 w-72 bg-white border-r border-gray-100 z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}>
           <div className="h-full flex flex-col p-6">
-            <div className="flex items-center gap-3 mb-8">
+            <div className="flex items-center gap-3 mb-6">
               <div className="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-100 shadow-sm flex items-center justify-center overflow-hidden">
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -274,7 +275,7 @@ const App = () => {
               </button>
             </div>
 
-            <nav className="flex-1 space-y-1">
+            <nav className="flex-1 space-y-1 overflow-y-auto pr-1 min-h-0 max-h-[70vh]">
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2 mb-3">Navigation</p>
               {navItems.map((item) => (
                 <Link
@@ -300,27 +301,38 @@ const App = () => {
               {adminItems.length > 0 && (
                 <>
                   <div className="h-px bg-gray-100 my-4" />
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2 mb-3">Management</p>
-                  {adminItems.map((item) => (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      onClick={() => setIsSidebarOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 group ${
-                        activeTab === item.path
-                          ? 'bg-gray-50 text-[#1A2230] shadow-sm'
-                          : 'text-gray-500 hover:bg-gray-50 hover:text-[#1A2230]'
-                      }`}
-                    >
-                      <span className={`w-8 h-8 rounded-xl flex items-center justify-center border ${activeTab === item.path ? 'bg-white border-gray-200 text-indigo-600' : 'bg-white/70 border-gray-100 text-gray-400 group-hover:text-indigo-600'}`}>
-                        <Icon icon={getIcon(item.icon, activeTab === item.path)} fontSize={18} />
-                      </span>
-                      <span className="font-semibold text-sm tracking-tight">{item.label}</span>
-                      <span className={`ml-auto text-[11px] font-semibold ${activeTab === item.path ? 'text-indigo-600' : 'text-gray-400'}`}>
-                        Admin
-                      </span>
-                    </Link>
-                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setIsAdminMenuOpen((prev) => !prev)}
+                    className="w-full flex items-center justify-between px-2 py-2 text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-gray-600"
+                  >
+                    <span>Management</span>
+                    <Icon icon={isAdminMenuOpen ? 'solar:alt-arrow-up-bold' : 'solar:alt-arrow-down-bold'} fontSize={16} />
+                  </button>
+                  {isAdminMenuOpen && (
+                    <div className="space-y-1">
+                      {adminItems.map((item) => (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          onClick={() => setIsSidebarOpen(false)}
+                          className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 group ${
+                            activeTab === item.path
+                              ? 'bg-gray-50 text-[#1A2230] shadow-sm'
+                              : 'text-gray-500 hover:bg-gray-50 hover:text-[#1A2230]'
+                          }`}
+                        >
+                          <span className={`w-8 h-8 rounded-xl flex items-center justify-center border ${activeTab === item.path ? 'bg-white border-gray-200 text-indigo-600' : 'bg-white/70 border-gray-100 text-gray-400 group-hover:text-indigo-600'}`}>
+                            <Icon icon={getIcon(item.icon, activeTab === item.path)} fontSize={18} />
+                          </span>
+                          <span className="font-semibold text-sm tracking-tight">{item.label}</span>
+                          <span className={`ml-auto text-[11px] font-semibold ${activeTab === item.path ? 'text-indigo-600' : 'text-gray-400'}`}>
+                            Admin
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </>
               )}
             </nav>
