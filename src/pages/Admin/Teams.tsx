@@ -64,11 +64,26 @@ const AdminTeams = () => {
   const fetchTeamMembers = async (teamId: string) => {
     const { data, error } = await supabase
       .from('ts_v2025_team_members')
-      .select('id, user_id, status, role, profiles:ts_v2025_profiles(full_name, email, points)')
+      .select('id, user_id, status, role')
       .eq('team_id', teamId)
       .order('created_at', { ascending: true });
     if (error) throw error;
-    setTeamMembers(data || []);
+    const memberList = data || [];
+    const profileIds = memberList.map((m: any) => m.user_id).filter(Boolean);
+    let profilesMap = new Map<string, any>();
+    if (profileIds.length > 0) {
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('ts_v2025_profiles')
+        .select('id, full_name, email, points')
+        .in('id', profileIds);
+      if (profilesError) throw profilesError;
+      profilesMap = new Map((profilesData || []).map((p: any) => [p.id, p]));
+    }
+    const hydrated = memberList.map((m: any) => ({
+      ...m,
+      profiles: profilesMap.get(m.user_id) || null
+    }));
+    setTeamMembers(hydrated);
   };
 
   useEffect(() => {

@@ -23,7 +23,13 @@ export default async function handler(req, res) {
       .maybeSingle();
 
     const adminEmail = String(process.env.ADMIN_EMAIL || '').toLowerCase();
-    const isAdmin = requesterProfile?.role === 'admin' || (user.email || '').toLowerCase() === adminEmail;
+    const viteAdminEmail = String(process.env.VITE_ADMIN_EMAIL || '').toLowerCase();
+    const metaRole = String(user?.user_metadata?.role || '').toLowerCase();
+    const isAdmin =
+      requesterProfile?.role === 'admin' ||
+      metaRole === 'admin' ||
+      (user.email || '').toLowerCase() === adminEmail ||
+      (user.email || '').toLowerCase() === viteAdminEmail;
     if (!isAdmin) return res.status(403).json({ error: 'Forbidden' });
 
     const { user_id, approved } = req.body || {};

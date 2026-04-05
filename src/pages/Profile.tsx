@@ -85,13 +85,28 @@ const Profile = () => {
       if (membership?.team_id) {
         const { data: members, error: membersError } = await supabase
           .from('ts_v2025_team_members')
-          .select('id, user_id, status, role, profiles:ts_v2025_profiles(full_name, email, points)')
+          .select('id, user_id, status, role')
           .eq('team_id', membership.team_id)
           .order('created_at', { ascending: true });
 
         if (membersError) throw membersError;
-        setTeamMembers(members || []);
-        setTeamRequests((members || []).filter((m: any) => m.status === 'pending'));
+        const memberList = members || [];
+        const profileIds = memberList.map((m: any) => m.user_id).filter(Boolean);
+        let profilesMap = new Map<string, any>();
+        if (profileIds.length > 0) {
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('ts_v2025_profiles')
+            .select('id, full_name, email, points')
+            .in('id', profileIds);
+          if (profilesError) throw profilesError;
+          profilesMap = new Map((profilesData || []).map((p: any) => [p.id, p]));
+        }
+        const hydratedMembers = memberList.map((m: any) => ({
+          ...m,
+          profiles: profilesMap.get(m.user_id) || null
+        }));
+        setTeamMembers(hydratedMembers);
+        setTeamRequests(hydratedMembers.filter((m: any) => m.status === 'pending'));
       } else {
         setTeamMembers([]);
         setTeamRequests([]);
