@@ -102,7 +102,7 @@ const App = () => {
           const created = await res.json();
           setProfile(created);
         } else {
-          console.warn('Profile not found for user:', userId);
+          console.warn('Profile not found for user:', session.user.id);
         }
       }
     } catch (err) {
