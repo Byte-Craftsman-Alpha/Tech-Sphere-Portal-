@@ -94,3 +94,5 @@ The project is configured for deployment on Vercel.
 | `ADMIN_PASSWORD` | Password for the default admin account created by setup |
 | `VITE_GOOGLE_CLIENT_ID` | Google OAuth Client ID |
 | `DEV_MODE` | Set to "true" to log OTPs in development mode |
+
+
