@@ -91,9 +91,12 @@ const Challenges = () => {
         .eq('user_id', user?.id || '')
         .eq('status', 'approved')
         .maybeSingle();
-      const enrichedProfile = {
+      const teamName = Array.isArray((teamMember as any)?.team)
+        ? (teamMember as any).team[0]?.name
+        : (teamMember as any)?.team?.name;
+      const enrichedProfile: Record<string, any> = {
         ...(profile || {}),
-        team_name: teamMember?.team?.name || ''
+        team_name: teamName || ''
       };
       setProfileInfo(enrichedProfile);
 
@@ -118,7 +121,7 @@ const Challenges = () => {
           (showForm.custom_form || []).forEach((field: any) => {
             if (next[field.id]) return;
             if (field.type === 'profile_field' && field.profile_key && enrichedProfile) {
-              next[field.id] = enrichedProfile[field.profile_key] || '';
+              next[field.id] = (enrichedProfile as Record<string, any>)[field.profile_key] || '';
               return;
             }
             if (field.type === 'user_select' && field.default_value) {
@@ -213,9 +216,12 @@ const Challenges = () => {
       .eq('user_id', user.id)
       .eq('status', 'approved')
       .maybeSingle();
+    const teamName = Array.isArray((teamMember as any)?.team)
+      ? (teamMember as any).team[0]?.name
+      : (teamMember as any)?.team?.name;
     return {
       ...(profile || {}),
-      team_name: teamMember?.team?.name || ''
+      team_name: teamName || ''
     };
   };
 
