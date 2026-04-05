@@ -1,168 +1,96 @@
-Creating a dedicated app or web portal for a technical community is a powerful way to centralize communication, foster collaboration, and streamline event coordination. Below is a comprehensive breakdown of essential features, pages, and types of information the platform should include to serve students, faculty, and organizers effectively.
+# TechSphere - IET DDUGU Community App
 
----
+A modern, mobile-first responsive web application for the Technical Community "TechSphere" of the Institute of Engineering & Technology, Deen Dayal Upadhyay Gorakhpur University.
 
-## **Core Objectives of the Platform**
-1. **Centralized Communication** – Announcements, updates, and discussions.
-2. **Event Management** – Hackathons, coding contests, seminars, workshops.
-3. **Resource Sharing** – Learning materials, tutorials, project ideas.
-4. **Community Building** – Profiles, forums, collaboration spaces.
-5. **Skill Development Tracking** – Badges, certifications, progress logs.
+## Features
 
----
+- **Mobile-First Design**: Optimized for Android/iOS with a bottom navigation bar and a desktop-friendly sidebar.
+- **Authentication**: Email/Password and Google Sign-in via Supabase with custom OTP verification.
+- **Profile Management**: Capture Name, Branch, Roll Number, Semester, and Social accounts.
+- **Event Management**:
+  - **Users**: Browse and register for events, view event-specific passes with QR codes.
+  - **Admins**: Create/edit events, track registrations, manage user roles, and reset credentials.
+- **Challenges & Leaderboard**: Gamified experience for community members.
 
-## **Essential Pages & Features**
+## Tech Stack
 
-### **1. Home / Dashboard**
-- **Purpose**: Central hub showing personalized, relevant content.
-- **Features**:
-  - Upcoming events (with countdowns)
-  - Latest announcements
-  - Trending discussions or posts
-  - Quick access buttons (e.g., “Register for Hackathon,” “View Resources”)
-  - Personalized feed based on user interests/tags (e.g., AI, Web Dev, Cybersecurity)
+- **Frontend**: React 19, Vite, TypeScript, Tailwind CSS v4, Framer Motion, Lucide Icons.
+- **Backend**: Local Node.js API Server (Mock Vercel Serverless Functions) for development, Vercel for production.
+- **Database & Auth**: Supabase (PostgreSQL) with Prisma ORM.
 
----
+## Getting Started
 
-### **2. Events Page**
-- **Purpose**: Discover, register for, and manage participation in events.
-- **Subsections**:
-  - **Upcoming Events** (filterable by type: hackathon, seminar, workshop, competition)
-  - **Ongoing Events** (live updates, leaderboards for contests)
-  - **Past Events** (archives with results, photos, recordings)
-- **Event Detail View**:
-  - Date, time, venue (or virtual link)
-  - Description, rules, eligibility
-  - Registration button / form
-  - Participant list (optional)
-  - Discussion thread for Q&A
-  - Resource attachments (e.g., problem statements, datasets)
-- **Admin Features**:
-  - Create/edit events
-  - Manage registrations
-  - Send event-specific notifications
+### Prerequisites
 
----
+- Node.js (v18 or higher process with `--env-file` support, v20.6+ recommended)
+- npm or yarn
+- A Supabase project
 
-### **3. Announcements**
-- **Purpose**: Official updates from the institute or community leads.
-- **Features**:
-  - Categorized announcements (e.g., “Hackathon Results,” “New Workshop,” “Sponsorship Opportunity”)
-  - Push/email notifications for high-priority posts
-  - Comment/react functionality (👍, ❤️, etc.)
-  - Archive with search
+### Installation
 
----
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd techsphere
+   ```
 
-### **4. Community Forum / Discussion Board**
-- **Purpose**: Peer-to-peer knowledge sharing and Q&A.
-- **Structure**:
-  - Categories (e.g., “Web Development,” “Machine Learning,” “Career Advice,” “Project Help”)
-  - Threaded discussions
-  - Upvote/downvote system
-  - Tags for easy filtering
-  - Option to mark answers as “Accepted”
-- **Moderation Tools**:
-  - Report posts
-  - Pin important threads
-  - Assign moderators
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
----
+3. Set up environment variables:
+   - Copy `.env.example` to `.env`.
+   - Fill in your Supabase credentials, database URL, and Google OAuth details.
 
-### **5. Resources Library**
-- **Purpose**: Repository of learning materials.
-- **Content Types**:
-  - Tutorials & guides (PDFs, videos, blogs)
-  - Past event materials (slides, code templates)
-  - Recommended external links (MOOCs, documentation)
-  - Cheat sheets & reference docs
-- **Organization**:
-  - Filter by topic, difficulty, format
-  - User ratings & reviews
-  - “Most downloaded” or “Editor’s picks” sections
+### Database Setup (Automated)
 
----
+The project includes a fully automated database setup script. You no longer need to copy-paste SQL manually!
 
-### **6. User Profile**
-- **Purpose**: Personal identity and progress tracking.
-- **Features**:
-  - Name, photo, bio, skills/tags (e.g., Python, React, Data Science)
-  - Achievements/Badges (e.g., “Hackathon Finalist,” “10+ Forum Answers”)
-  - Event participation history
-  - Portfolio/projects section (links to GitHub, personal websites)
-  - Settings: notification preferences, privacy controls
+Make sure you have added your `DATABASE_URL` to your `.env` file (found in Supabase > Project Settings > Database > URI). Then run:
 
----
+```bash
+npm run setup
+```
 
-### **7. Teams & Collaboration**
-- **Purpose**: Facilitate group formation for hackathons or projects.
-- **Features**:
-  - “Find a Team” board (post availability/skills needed)
-  - Create/join teams
-  - Team chat or shared workspace
-  - Team profile with members, project idea, status
+This command will:
+1. Connect to your database.
+2. Automatically create all necessary tables (Profiles, Events, Registrations, OTPs).
+3. Configure Row Level Security (RLS) policies.
+4. Establish database triggers.
+5. Create your default Admin user.
 
----
+### Running Locally (Full-Stack)
 
-### **8. Leaderboard / Achievements**
-- **Purpose**: Gamify participation and recognize contributions.
-- **Metrics**:
-  - Event rankings (e.g., top 10 in coding contest)
-  - Contribution points (forum answers, resource uploads)
-  - Badges for milestones (e.g., “First Hackathon,” “Mentor Badge”)
-- **Filters**: All-time, monthly, by category
+To run both the Vite frontend and local Node.js API server simultaneously, use the full-stack command:
 
----
+```bash
+npm run fullstack
+```
 
-### **9. Admin / Organizer Panel** (Backend)
-- **Purpose**: Manage the entire platform.
-- **Features**:
-  - User management (approve accounts, assign roles)
-  - Event creation & registration control
-  - Announcement publishing
-  - Forum moderation
-  - Analytics dashboard (active users, popular events, engagement stats)
-  - Export data (e.g., participant lists)
+1. The API server will start on `http://127.0.0.1:3000`
+2. The Vite React app will start on `http://localhost:5173`
+3. Open [http://localhost:5173](http://localhost:5173) in your browser.
 
----
+> Note: The Vite dev server is configured to proxy all `/api` requests automatically to the local API server.
 
-### **10. Notifications Center**
-- **Purpose**: Keep users informed without overwhelming them.
-- **Types**:
-  - Event reminders
-  - Forum replies
-  - New announcements
-  - Team invites
-  - Badge earned
-- **Customization**: Users choose which notifications to receive (email/push/in-app)
+### Deployment
 
----
+The project is configured for deployment on Vercel.
 
-## **Additional Features to Consider**
-- **Calendar Integration**: Sync events with Google Calendar/iCal.
-- **Mobile App**: Native iOS/Android apps for on-the-go access.
-- **Dark Mode**: For developer-friendly UI.
-- **Search Functionality**: Across events, resources, and discussions.
-- **Feedback Form**: For users to suggest improvements.
-- **Sponsor/Partner Section**: Showcase sponsors with logos and links (useful for hackathons).
-- **Mentorship Board**: Connect juniors with seniors or alumni for guidance.
+1. Install Vercel CLI: `npm i -g vercel`
+2. Run `vercel` to deploy.
+3. Ensure all environment variables from `.env` are added to your Vercel project settings.
 
----
+## Environment Variables
 
-## **Technical Considerations**
-- **Authentication**: Institute email login (e.g., via OAuth with university credentials).
-- **Responsive Design**: Works on mobile, tablet, and desktop.
-- **Scalability**: Handle spikes during major events (e.g., hackathon registration).
-- **Security**: Protect user data, especially if storing code submissions or personal info.
-
----
-
-## **Example User Journey**
-1. **New User**: Signs up → completes profile → joins “Web Dev” interest group.
-2. **Learner**: Checks Resources → watches a React tutorial → asks a question in the forum.
-3. **Participant**: Registers for a hackathon → joins a team → submits project → wins a badge.
-4. **Organizer**: Creates a seminar event → uploads slides → sends reminder → posts results.
-
----
-
-By implementing these features, your technical community portal becomes more than just an announcement board—it evolves into a dynamic, engaging ecosystem that nurtures learning, collaboration, and innovation.
+| Variable | Description |
+|----------|-------------|
+| `VITE_SUPABASE_URL` | Your Supabase Project URL |
+| `VITE_SUPABASE_ANON_KEY` | Your Supabase Public Anon Key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Your Supabase Service Role Key (Keep secret!) |
+| `DATABASE_URL` | Direct Postgres Connection string for automated setup |
+| `ADMIN_EMAIL` | Email for the default admin account created by setup |
+| `ADMIN_PASSWORD` | Password for the default admin account created by setup |
+| `VITE_GOOGLE_CLIENT_ID` | Google OAuth Client ID |
+| `DEV_MODE` | Set to "true" to log OTPs in development mode |

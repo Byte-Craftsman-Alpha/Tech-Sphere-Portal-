@@ -1,0 +1,99 @@
+// This is your Prisma schema file for Supabase (PostgreSQL)
+// Adjust the DATABASE_URL in your .env file to match your Supabase connection string
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Profile {
+  id           String        @id @default(uuid()) @db.Uuid
+  email        String        @unique
+  full_name    String?
+  branch       String?
+  semester     String?
+  points       Int           @default(0)
+  role         String        @default("user")
+  approved     Boolean       @default(false)
+  avatar_url   String?
+  github_url   String?
+  linkedin_url String?
+  instagram    String?
+  whatsapp     String?
+  created_at   DateTime      @default(now()) @db.Timestamptz()
+  updated_at   DateTime      @default(now()) @db.Timestamptz()
+
+  registrations Registration[]
+  submissions   Submission[]
+
+  @@map("ts_v2025_profiles")
+}
+
+model Event {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title          String
+  description    String?
+  date           DateTime        @db.Timestamptz()
+  location       String?
+  capacity       Int?
+  image_url      String?
+  type           String?         @default("event")
+  pass_settings  Json?           @default("{\"is_open\": true, \"qr_size\": 25, \"qr_x\": 50, \"qr_y\": 50}")
+  custom_form    Json?           @default("[]")
+  created_at     DateTime?       @default(now()) @db.Timestamptz()
+
+  registrations Registration[]
+  submissions   Submission[]
+
+  @@map("ts_v2025_events")
+}
+
+model Registration {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String    @db.Uuid
+  event_id       String    @db.Uuid
+  status         String?   @default("registered")
+  qr_data        String?   @unique
+  scan_count     Int?      @default(0)
+  form_responses Json?     @default("{}")
+  created_at     DateTime? @default(now()) @db.Timestamptz()
+
+  profile Profile @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  event   Event   @relation(fields: [event_id], references: [id], onDelete: Cascade)
+
+  @@map("ts_v2025_registrations")
+}
+
+model Otp {
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email      String   @unique
+  code       String
+  created_at DateTime? @default(now()) @db.Timestamptz()
+  expires_at DateTime @db.Timestamptz()
+
+  @@map("ts_v2025_otps")
+}
+
+model Submission {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  event_id     String    @db.Uuid
+  user_id      String    @db.Uuid
+  project_url  String?
+  demo_url     String?
+  description  String?
+  tech_stack   String[]
+  score        Int?
+  feedback     String?
+  created_at   DateTime? @default(now()) @db.Timestamptz()
+  updated_at   DateTime? @default(now()) @db.Timestamptz()
+
+  event   Event   @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  profile Profile @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([event_id, user_id])
+  @@map("ts_v2025_submissions")
+}
