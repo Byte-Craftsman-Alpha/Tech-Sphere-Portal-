@@ -1,5 +1,5 @@
-import nodemailer from 'nodemailer';
 import supabase from '../lib/supabaseAdmin.js';
+import { sendOtpEmail } from './utils/email.js';
 const TABLE = 'ts_v2025_otps';
 
 async function findUserByEmail(email) {
@@ -34,8 +34,7 @@ export default async function handler(req, res) {
     const { error: dbError } = await supabase.from(TABLE).upsert({ email, code: otp, expires_at: expiresAt }, { onConflict: 'email' });
     if (dbError) throw dbError;
     if (process.env.DEV_MODE === 'true') return res.status(200).json({ message: 'OTP generated (Dev Mode)', otp: otp });
-    const transporter = nodemailer.createTransport({ host: process.env.SMTP_HOST, port: parseInt(process.env.SMTP_PORT || '465'), secure: process.env.SMTP_PORT === '465', auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } });
-    await transporter.sendMail({ from: process.env.SMTP_FROM, to: email, subject: 'TechSphere Verification Code', html: `<h2>TechSphere</h2><p>Your verification code is: <strong>${otp}</strong></p>` });
+    await sendOtpEmail({ to: email, otp });
     return res.status(200).json({ message: 'OTP sent successfully' });
   } catch (err) { return res.status(500).json({ error: err.message }); }
 }

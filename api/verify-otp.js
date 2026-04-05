@@ -1,4 +1,5 @@
 import supabase from '../lib/supabaseAdmin.js';
+import { sendAdminRegistrationEmail } from './utils/email.js';
 
 const TABLE = 'ts_v2025_otps';
 
@@ -22,7 +23,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(204).end();
 
-  const { email, otp, password, full_name, branch, semester, github, linkedin, instagram, whatsapp } = req.body;
+  const { email, otp, password, full_name, branch, semester, github, linkedin, instagram, whatsapp, roll_no } = req.body;
 
   try {
     if (!email || !otp || !password || !full_name || !branch || !semester) {
@@ -51,6 +52,7 @@ export default async function handler(req, res) {
       id: authUser.user.id,
       email,
       full_name,
+      roll_no,
       branch,
       semester,
       approved: false,
@@ -66,6 +68,14 @@ export default async function handler(req, res) {
     }
 
     await supabase.from(TABLE).delete().eq('email', email);
+    try {
+      await sendAdminRegistrationEmail({
+        adminEmail: process.env.ADMIN_EMAIL,
+        user: { email, full_name, branch, semester, roll_no }
+      });
+    } catch (err) {
+      console.warn('Admin email notify failed:', err?.message || err);
+    }
     return res.status(200).json({ success: true });
   } catch (err) {
     return res.status(500).json({ error: err.message });

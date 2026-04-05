@@ -22,6 +22,7 @@ const AdminUsers = () => {
   const [importRows, setImportRows] = useState<any[]>([]);
   const [importError, setImportError] = useState<string | null>(null);
   const [actionsMenuUserId, setActionsMenuUserId] = useState<string | null>(null);
+  const [approvalFilter, setApprovalFilter] = useState<'all' | 'pending' | 'approved'>('all');
   const [createForm, setCreateForm] = useState<any>({
     email: '',
     password: '',
@@ -256,10 +257,15 @@ const AdminUsers = () => {
     }
   };
 
-  const filteredUsers = users.filter((u: any) => 
-    u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = users.filter((u: any) => {
+    const matchesSearch =
+      u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!matchesSearch) return false;
+    if (approvalFilter === 'pending') return !u.approved;
+    if (approvalFilter === 'approved') return Boolean(u.approved);
+    return true;
+  });
 
   const handleResetPassword = async () => {
     if (!selectedUser?.id) return;
@@ -371,11 +377,18 @@ const AdminUsers = () => {
 
   const handleSetApproval = async (userId: string, approved: boolean) => {
     try {
-      const { error } = await supabase
-        .from('ts_v2025_profiles')
-        .update({ approved })
-        .eq('id', userId);
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No active session');
+      const res = await fetch('/api/admin-approve-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ user_id: userId, approved })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Server error');
       fetchUsers();
     } catch (err: any) {
       alert('Failed to update approval: ' + err.message);
@@ -403,6 +416,26 @@ const AdminUsers = () => {
         </div>
       </header>
       <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-2 py-2">
+          <button
+            onClick={() => setApprovalFilter('all')}
+            className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${approvalFilter === 'all' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setApprovalFilter('pending')}
+            className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${approvalFilter === 'pending' ? 'bg-amber-500 text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+          >
+            Pending
+          </button>
+          <button
+            onClick={() => setApprovalFilter('approved')}
+            className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${approvalFilter === 'approved' ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+          >
+            Approved
+          </button>
+        </div>
         <button
           onClick={handleRepairOrphans}
           disabled={repairLoading}
