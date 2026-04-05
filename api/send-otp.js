@@ -1,5 +1,5 @@
 import supabase from '../lib/supabaseAdmin.js';
-import { sendOtpEmail } from './utils/email.js';
+import { sendOtpEmail } from '../lib/server/email.js';
 const TABLE = 'ts_v2025_otps';
 
 async function findUserByEmail(email) {

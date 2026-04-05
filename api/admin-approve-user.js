@@ -1,5 +1,5 @@
 import supabase from '../lib/supabaseAdmin.js';
-import { sendUserApprovalEmail } from './utils/email.js';
+import { sendUserApprovalEmail } from '../lib/server/email.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');

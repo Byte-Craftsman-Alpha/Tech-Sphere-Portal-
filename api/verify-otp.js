@@ -1,5 +1,5 @@
 import supabase from '../lib/supabaseAdmin.js';
-import { sendAdminRegistrationEmail } from './utils/email.js';
+import { sendAdminRegistrationEmail } from '../lib/server/email.js';
 
 const TABLE = 'ts_v2025_otps';
 
