@@ -15,7 +15,12 @@ export default async function handler(req, res) {
     if (authError || !user) return res.status(401).json({ error: 'Unauthorized' });
 
     if (req.method === 'GET') {
-      const { data, error } = await supabase.from('ts_v2025_profiles').select('*').eq('id', user.id).single();
+      const { data, error } = await supabase
+        .from('ts_v2025_profiles')
+        .select('*')
+        .eq('id', user.id)
+        .limit(1)
+        .maybeSingle();
       if (error && error.code !== 'PGRST116') throw error;
       return res.status(200).json(data || { id: user.id, email: user.email });
     }
@@ -26,7 +31,7 @@ export default async function handler(req, res) {
         .from('ts_v2025_profiles')
         .insert(payload)
         .select()
-        .single();
+        .maybeSingle();
       if (error) {
         const msg = String(error.message || '');
         if (msg.includes('duplicate') || msg.includes('already exists')) {
@@ -35,7 +40,7 @@ export default async function handler(req, res) {
             .update(payload)
             .eq('id', user.id)
             .select()
-            .single();
+            .maybeSingle();
           if (updateError) throw updateError;
           return res.status(200).json(updated);
         }
@@ -50,8 +55,18 @@ export default async function handler(req, res) {
         .update({ ...req.body })
         .eq('id', user.id)
         .select()
-        .single();
-      if (error) throw error;
+        .maybeSingle();
+      if (error && error.code !== 'PGRST116') throw error;
+      if (!data) {
+        const payload = { approved: false, ...req.body, id: user.id, email: user.email };
+        const { data: created, error: createError } = await supabase
+          .from('ts_v2025_profiles')
+          .upsert(payload)
+          .select()
+          .maybeSingle();
+        if (createError) throw createError;
+        return res.status(200).json(created);
+      }
       return res.status(200).json(data);
     }
   } catch (err) {
