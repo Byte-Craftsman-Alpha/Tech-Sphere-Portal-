@@ -197,6 +197,82 @@ CREATE TABLE IF NOT EXISTS ts_v2025_registration_shares (
 ALTER TABLE ts_v2025_registration_shares ENABLE ROW LEVEL SECURITY;
 
 -- ----------------------------------------------------------------
+-- 6c. TEAMS (Community teams + membership requests)
+-- ----------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS ts_v2025_teams (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL UNIQUE,
+  leader_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS ts_v2025_team_members (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  team_id UUID REFERENCES ts_v2025_teams(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  role TEXT DEFAULT 'member',
+  status TEXT DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id)
+);
+
+ALTER TABLE ts_v2025_teams ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ts_v2025_team_members ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Teams are viewable by everyone" ON ts_v2025_teams;
+CREATE POLICY "Teams are viewable by everyone" ON ts_v2025_teams FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Users can create their own teams" ON ts_v2025_teams;
+CREATE POLICY "Users can create their own teams" ON ts_v2025_teams
+FOR INSERT WITH CHECK (auth.uid() = leader_id);
+
+DROP POLICY IF EXISTS "Leaders or admins can update teams" ON ts_v2025_teams;
+CREATE POLICY "Leaders or admins can update teams" ON ts_v2025_teams
+FOR UPDATE USING (
+  auth.uid() = leader_id OR
+  EXISTS (SELECT 1 FROM ts_v2025_profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+);
+
+DROP POLICY IF EXISTS "Leaders or admins can delete teams" ON ts_v2025_teams;
+CREATE POLICY "Leaders or admins can delete teams" ON ts_v2025_teams
+FOR DELETE USING (
+  auth.uid() = leader_id OR
+  EXISTS (SELECT 1 FROM ts_v2025_profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+);
+
+DROP POLICY IF EXISTS "Members can view their teams" ON ts_v2025_team_members;
+CREATE POLICY "Members can view their teams" ON ts_v2025_team_members
+FOR SELECT USING (
+  auth.uid() = user_id OR
+  EXISTS (SELECT 1 FROM ts_v2025_teams t WHERE t.id = team_id AND t.leader_id = auth.uid()) OR
+  EXISTS (SELECT 1 FROM ts_v2025_profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+);
+
+DROP POLICY IF EXISTS "Users can request to join teams" ON ts_v2025_team_members;
+CREATE POLICY "Users can request to join teams" ON ts_v2025_team_members
+FOR INSERT WITH CHECK (
+  auth.uid() = user_id OR
+  EXISTS (SELECT 1 FROM ts_v2025_profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+);
+
+DROP POLICY IF EXISTS "Leaders or admins can update team members" ON ts_v2025_team_members;
+CREATE POLICY "Leaders or admins can update team members" ON ts_v2025_team_members
+FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM ts_v2025_teams t WHERE t.id = team_id AND t.leader_id = auth.uid()) OR
+  EXISTS (SELECT 1 FROM ts_v2025_profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+);
+
+DROP POLICY IF EXISTS "Members can leave teams" ON ts_v2025_team_members;
+CREATE POLICY "Members can leave teams" ON ts_v2025_team_members
+FOR DELETE USING (
+  auth.uid() = user_id OR
+  EXISTS (SELECT 1 FROM ts_v2025_teams t WHERE t.id = team_id AND t.leader_id = auth.uid()) OR
+  EXISTS (SELECT 1 FROM ts_v2025_profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+);
+
+-- ----------------------------------------------------------------
 -- 7. SAFE COLUMN BACKFILL (FOR EXISTING DATABASES)
 -- ----------------------------------------------------------------
 ALTER TABLE ts_v2025_profiles ADD COLUMN IF NOT EXISTS instagram TEXT;
@@ -212,3 +288,8 @@ ALTER TABLE ts_v2025_registrations ADD COLUMN IF NOT EXISTS attended BOOLEAN DEF
 ALTER TABLE ts_v2025_registrations ADD COLUMN IF NOT EXISTS attended_at TIMESTAMPTZ;
 ALTER TABLE ts_v2025_registration_shares ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
 ALTER TABLE ts_v2025_registration_shares ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE ts_v2025_teams ADD COLUMN IF NOT EXISTS leader_id UUID;
+ALTER TABLE ts_v2025_teams ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE ts_v2025_team_members ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'member';
+ALTER TABLE ts_v2025_team_members ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
+ALTER TABLE ts_v2025_team_members ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();

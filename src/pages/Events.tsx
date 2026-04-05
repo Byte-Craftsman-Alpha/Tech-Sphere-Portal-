@@ -68,13 +68,54 @@ const Events = () => {
       .map((o) => o.trim())
       .filter(Boolean);
 
-  const validateForm = (event: any) => {
+  const normalizeUniqueValue = (value: any) => {
+    if (Array.isArray(value)) {
+      return value.map((v) => String(v).trim().toLowerCase()).filter(Boolean).join('|');
+    }
+    if (value === undefined || value === null) return '';
+    return String(value).trim().toLowerCase();
+  };
+
+  const validateForm = async (event: any) => {
     const errors: any = {};
     event.custom_form?.forEach((field: any) => {
       const value = formResponses[field.id];
       const isEmpty = Array.isArray(value) ? value.length === 0 : !value;
       if (field.required && isEmpty) errors[field.id] = 'This field is required';
     });
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return false;
+    }
+
+    const uniqueFields = (event.custom_form || []).filter((field: any) => field.constraint === 'unique');
+    if (uniqueFields.length === 0) {
+      setFormErrors(errors);
+      return true;
+    }
+
+    const { data: existingRegs, error } = await supabase
+      .from('ts_v2025_registrations')
+      .select('id, form_responses')
+      .eq('event_id', event.id);
+    if (error) {
+      console.error('Unique constraint check failed:', error.message);
+      setFormErrors(errors);
+      return true;
+    }
+
+    const existingId = getPass(event.id)?.id;
+    uniqueFields.forEach((field: any) => {
+      const valueKey = normalizeUniqueValue(formResponses[field.id]);
+      if (!valueKey) return;
+      const conflict = (existingRegs || []).find((reg: any) => {
+        if (reg.id === existingId) return false;
+        const regValue = normalizeUniqueValue(reg.form_responses?.[field.id]);
+        return regValue && regValue === valueKey;
+      });
+      if (conflict) errors[field.id] = `${field.label || 'This field'} must be unique`;
+    });
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -90,7 +131,7 @@ const Events = () => {
       setFormErrors({});
       return;
     }
-    if (showForm && !validateForm(showForm)) return;
+    if (showForm && !(await validateForm(showForm))) return;
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
     setLoading(true);

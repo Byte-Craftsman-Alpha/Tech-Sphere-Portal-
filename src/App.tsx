@@ -19,6 +19,7 @@ import PublicRegistrations from './pages/PublicRegistrations';
 import AdminEvents from './pages/Admin/Events';
 import AdminChallenges from './pages/Admin/Challenges';
 import AdminUsers from './pages/Admin/Users';
+import AdminTeams from './pages/Admin/Teams';
 
 handleGoogleRedirect();
 
@@ -125,6 +126,7 @@ const App = () => {
     if (path.startsWith('/admin/events')) return '/admin/events';
     if (path.startsWith('/admin/challenges')) return '/admin/challenges';
     if (path.startsWith('/admin/users')) return '/admin/users';
+    if (path.startsWith('/admin/teams')) return '/admin/teams';
     return '/home';
   };
 
@@ -228,6 +230,7 @@ const App = () => {
     { label: 'Events Mgr', icon: 'solar:settings-minimalistic-bold', path: '/admin/events' },
     { label: 'Challenges Mgr', icon: 'solar:cup-bold', path: '/admin/challenges' },
     { label: 'Users Mgr', icon: 'solar:users-group-rounded-bold', path: '/admin/users' },
+    { label: 'Teams Mgr', icon: 'solar:users-group-rounded-bold', path: '/admin/teams' },
   ] : [];
 
   const getIcon = (icon: string, active: boolean) => {
@@ -357,6 +360,7 @@ const App = () => {
                   <Route path="/admin/events" element={<PageTransition><AdminEvents /></PageTransition>} />
                   <Route path="/admin/challenges" element={<PageTransition><AdminChallenges /></PageTransition>} />
                   <Route path="/admin/users" element={<PageTransition><AdminUsers /></PageTransition>} />
+                  <Route path="/admin/teams" element={<PageTransition><AdminTeams /></PageTransition>} />
                   <Route path="*" element={<PageTransition><Dashboard /></PageTransition>} />
                 </Routes>
               )}

@@ -161,7 +161,7 @@ const AdminEvents = () => {
   };
 
   const addFormField = () => {
-    setCustomForm([...customForm, { id: crypto.randomUUID(), label: '', type: 'text', required: false, options: '', regex: '' }]);
+    setCustomForm([...customForm, { id: crypto.randomUUID(), label: '', type: 'text', required: false, options: '', regex: '', constraint: 'none' }]);
   };
 
   const updateFormField = (id: string, field: string, value: any) => {
@@ -505,7 +505,7 @@ const AdminEvents = () => {
                   </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+              <div className="space-y-8">
                 <div className="space-y-8">
                   <section className="space-y-4">
                     <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Basic Details</h3>
@@ -559,6 +559,17 @@ const AdminEvents = () => {
                                 <option value="checkbox">Checkboxes</option>
                               </select>
                             </div>
+                            <div className="w-full md:w-36 space-y-1">
+                              <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Constraint</label>
+                              <select
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium"
+                                value={field.constraint || 'none'}
+                                onChange={e => updateFormField(field.id, 'constraint', e.target.value)}
+                              >
+                                <option value="none">None</option>
+                                <option value="unique">Unique</option>
+                              </select>
+                            </div>
                             <div className="md:pt-5 flex items-center gap-3 w-full md:w-auto">
                               <button 
                                 type="button" 
@@ -595,77 +606,74 @@ const AdminEvents = () => {
                     </section>
                   )}
                 </div>
-
-                <div className="space-y-8">
-                  <section className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Advanced Pass Settings</h3>
-                      <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 scale-90">
-                        <span className="text-[8px] font-bold text-gray-500 uppercase">Enable Passes</span>
-                        <button type="button" onClick={() => setHasPasses(!hasPasses)} className={`w-8 h-4 rounded-full relative transition-colors ${hasPasses ? 'bg-indigo-500' : 'bg-gray-300'}`}>
-                          <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform ${hasPasses ? 'left-4.5' : 'left-0.5'}`} />
-                        </button>
+                <section className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Advanced Pass Settings</h3>
+                    <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 scale-90">
+                      <span className="text-[8px] font-bold text-gray-500 uppercase">Enable Passes</span>
+                      <button type="button" onClick={() => setHasPasses(!hasPasses)} className={`w-8 h-4 rounded-full relative transition-colors ${hasPasses ? 'bg-indigo-500' : 'bg-gray-300'}`}>
+                        <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform ${hasPasses ? 'left-4.5' : 'left-0.5'}`} />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {hasPasses ? (
+                    <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-6 animate-in fade-in zoom-in duration-200">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-gray-500 uppercase">QR Size ({passSettings.qr_size}%)</label>
+                          <input type="range" min="10" max="50" value={passSettings.qr_size} onChange={e => setPassSettings({...passSettings, qr_size: parseInt(e.target.value)})} className="w-full accent-indigo-600" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-gray-500 uppercase">X Position ({passSettings.qr_x}%)</label>
+                          <input type="range" min="0" max="100" value={passSettings.qr_x} onChange={e => setPassSettings({...passSettings, qr_x: parseInt(e.target.value)})} className="w-full accent-indigo-600" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-gray-500 uppercase">Y Position ({passSettings.qr_y}%)</label>
+                          <input type="range" min="0" max="100" value={passSettings.qr_y} onChange={e => setPassSettings({...passSettings, qr_y: parseInt(e.target.value)})} className="w-full accent-indigo-600" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-gray-500 uppercase">Pass Background URL</label>
+                          <input className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs" value={passSettings.bg_image} onChange={e => setPassSettings({...passSettings, bg_image: e.target.value})} placeholder="Custom pass design..." />
+                        </div>
+                      </div>
+ 
+                      <div className="space-y-3">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase text-center">Live Pass Preview</p>
+                        <div className="relative w-full aspect-[3/4] max-w-[240px] mx-auto bg-[#161C24] rounded-xl overflow-hidden shadow-xl border border-gray-800">
+                          {passSettings.bg_image && <img src={passSettings.bg_image} className="absolute inset-0 w-full h-full object-cover opacity-60" />}
+                          <div className="absolute inset-0 flex flex-col items-center justify-between p-6 text-white z-10 pointer-events-none">
+                            <div className="text-center">
+                              <p className="text-[7px] font-bold text-indigo-400 uppercase tracking-widest">Entry Pass</p>
+                              <p className="text-xs font-bold truncate max-w-[150px]">{formValues.title || 'Event Title'}</p>
+                            </div>
+                            <div className="w-full border-t border-white/10 pt-3">
+                              <p className="text-[7px] font-bold text-gray-400 uppercase">Member</p>
+                              <p className="text-[9px] font-bold">Attendee Name</p>
+                            </div>
+                          </div>
+                          <div 
+                            className="absolute bg-white p-1 rounded-sm shadow-2xl overflow-hidden" 
+                            style={{ 
+                              width: `${passSettings.qr_size}%`, 
+                              aspectRatio: '1/1',
+                              left: `${passSettings.qr_x}%`,
+                              top: `${passSettings.qr_y}%`,
+                              transform: 'translate(-50%, -50%)'
+                            }}
+                          >
+                            <QRCodeSVG value="preview" size={256} className="w-full h-full" />
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    
-                    {hasPasses ? (
-                      <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-6 animate-in fade-in zoom-in duration-200">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-gray-500 uppercase">QR Size ({passSettings.qr_size}%)</label>
-                            <input type="range" min="10" max="50" value={passSettings.qr_size} onChange={e => setPassSettings({...passSettings, qr_size: parseInt(e.target.value)})} className="w-full accent-indigo-600" />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-gray-500 uppercase">X Position ({passSettings.qr_x}%)</label>
-                            <input type="range" min="0" max="100" value={passSettings.qr_x} onChange={e => setPassSettings({...passSettings, qr_x: parseInt(e.target.value)})} className="w-full accent-indigo-600" />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-gray-500 uppercase">Y Position ({passSettings.qr_y}%)</label>
-                            <input type="range" min="0" max="100" value={passSettings.qr_y} onChange={e => setPassSettings({...passSettings, qr_y: parseInt(e.target.value)})} className="w-full accent-indigo-600" />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-gray-500 uppercase">Pass Background URL</label>
-                            <input className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs" value={passSettings.bg_image} onChange={e => setPassSettings({...passSettings, bg_image: e.target.value})} placeholder="Custom pass design..." />
-                          </div>
-                        </div>
- 
-                        <div className="space-y-3">
-                          <p className="text-[10px] font-bold text-gray-400 uppercase text-center">Live Pass Preview</p>
-                          <div className="relative w-full aspect-[3/4] max-w-[240px] mx-auto bg-[#161C24] rounded-xl overflow-hidden shadow-xl border border-gray-800">
-                            {passSettings.bg_image && <img src={passSettings.bg_image} className="absolute inset-0 w-full h-full object-cover opacity-60" />}
-                            <div className="absolute inset-0 flex flex-col items-center justify-between p-6 text-white z-10 pointer-events-none">
-                              <div className="text-center">
-                                <p className="text-[7px] font-bold text-indigo-400 uppercase tracking-widest">Entry Pass</p>
-                                <p className="text-xs font-bold truncate max-w-[150px]">{formValues.title || 'Event Title'}</p>
-                              </div>
-                              <div className="w-full border-t border-white/10 pt-3">
-                                <p className="text-[7px] font-bold text-gray-400 uppercase">Member</p>
-                                <p className="text-[9px] font-bold">Attendee Name</p>
-                              </div>
-                            </div>
-                            <div 
-                              className="absolute bg-white p-1 rounded-sm shadow-2xl overflow-hidden" 
-                              style={{ 
-                                width: `${passSettings.qr_size}%`, 
-                                aspectRatio: '1/1',
-                                left: `${passSettings.qr_x}%`,
-                                top: `${passSettings.qr_y}%`,
-                                transform: 'translate(-50%, -50%)'
-                              }}
-                            >
-                              <QRCodeSVG value="preview" size={256} className="w-full h-full" />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="bg-gray-50/50 p-10 rounded-xl border border-dashed border-gray-200 flex flex-col items-center text-center">
-                        <Icon icon="solar:ticket-bold" fontSize={48} className="text-gray-300 mb-3" />
-                        <p className="text-xs font-medium text-gray-400">Pass generation is disabled for this event.</p>
-                      </div>
-                    )}
-                  </section>
-                </div>
+                  ) : (
+                    <div className="bg-gray-50/50 p-10 rounded-xl border border-dashed border-gray-200 flex flex-col items-center text-center">
+                      <Icon icon="solar:ticket-bold" fontSize={48} className="text-gray-300 mb-3" />
+                      <p className="text-xs font-medium text-gray-400">Pass generation is disabled for this event.</p>
+                    </div>
+                  )}
+                </section>
               </div>
 
               <div className="pt-6 sticky bottom-0 bg-white border-t border-gray-100 mt-10">

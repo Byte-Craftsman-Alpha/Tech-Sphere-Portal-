@@ -13,10 +13,24 @@ const Profile = () => {
   const [formData, setFormData] = useState<any>({});
   const [activeTab, setActiveTab] = useState('academic');
   const [updateLoading, setUpdateLoading] = useState(false);
+  const [teamMembership, setTeamMembership] = useState<any>(null);
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [teamRequests, setTeamRequests] = useState<any[]>([]);
+  const [teamLoading, setTeamLoading] = useState(true);
+  const [teamActionLoading, setTeamActionLoading] = useState(false);
+  const [createTeamName, setCreateTeamName] = useState('');
+  const [teamSearch, setTeamSearch] = useState('');
+  const [teamResults, setTeamResults] = useState<any[]>([]);
 
   useEffect(() => {
     fetchProfile();
   }, []);
+
+  useEffect(() => {
+    if (profile?.id) {
+      fetchTeamData();
+    }
+  }, [profile?.id]);
 
   const fetchProfile = async () => {
     try {
@@ -44,6 +58,221 @@ const Profile = () => {
       console.error('Error fetching profile:', err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTeamData = async () => {
+    setTeamLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setTeamMembership(null);
+        setTeamMembers([]);
+        setTeamRequests([]);
+        return;
+      }
+
+      const { data: membership, error: memberError } = await supabase
+        .from('ts_v2025_team_members')
+        .select('id, team_id, status, role, team:ts_v2025_teams(id, name, leader_id, created_at)')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (memberError) throw memberError;
+
+      setTeamMembership(membership || null);
+
+      if (membership?.team_id) {
+        const { data: members, error: membersError } = await supabase
+          .from('ts_v2025_team_members')
+          .select('id, user_id, status, role, profiles:ts_v2025_profiles(full_name, email, points)')
+          .eq('team_id', membership.team_id)
+          .order('created_at', { ascending: true });
+
+        if (membersError) throw membersError;
+        setTeamMembers(members || []);
+        setTeamRequests((members || []).filter((m: any) => m.status === 'pending'));
+      } else {
+        setTeamMembers([]);
+        setTeamRequests([]);
+      }
+    } catch (err: any) {
+      console.error('Error fetching team data:', err.message || err);
+    } finally {
+      setTeamLoading(false);
+    }
+  };
+
+  const cleanupTeamIfEmpty = async (teamId: string) => {
+    const { count, error } = await supabase
+      .from('ts_v2025_team_members')
+      .select('id', { count: 'exact', head: true })
+      .eq('team_id', teamId);
+    if (!error && (count || 0) === 0) {
+      await supabase.from('ts_v2025_teams').delete().eq('id', teamId);
+    }
+  };
+
+  const handleCreateTeam = async () => {
+    const teamName = createTeamName.trim();
+    if (!teamName) return;
+    if (teamMembership) {
+      alert('You are already part of a team. Leave your current team first.');
+      return;
+    }
+    setTeamActionLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: team, error } = await supabase
+        .from('ts_v2025_teams')
+        .insert({ name: teamName, leader_id: user.id })
+        .select()
+        .single();
+      if (error) throw error;
+
+      const { error: memberError } = await supabase
+        .from('ts_v2025_team_members')
+        .insert({ team_id: team.id, user_id: user.id, role: 'leader', status: 'approved' });
+      if (memberError) throw memberError;
+
+      setCreateTeamName('');
+      await fetchTeamData();
+    } catch (err: any) {
+      const msg = String(err.message || '');
+      if (msg.toLowerCase().includes('unique') || msg.toLowerCase().includes('duplicate')) {
+        alert('Team name already exists. Please choose a different name.');
+      } else {
+        alert('Failed to create team: ' + msg);
+      }
+    } finally {
+      setTeamActionLoading(false);
+    }
+  };
+
+  const handleSearchTeams = async () => {
+    const query = teamSearch.trim();
+    if (!query) {
+      setTeamResults([]);
+      return;
+    }
+    setTeamActionLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('ts_v2025_teams')
+        .select('id, name, leader_id')
+        .ilike('name', `%${query}%`)
+        .limit(10);
+      if (error) throw error;
+      setTeamResults(data || []);
+    } catch (err: any) {
+      alert('Failed to search teams: ' + (err.message || err));
+    } finally {
+      setTeamActionLoading(false);
+    }
+  };
+
+  const handleJoinTeam = async (teamId: string) => {
+    if (teamMembership) {
+      alert('You are already part of a team. Leave your current team first.');
+      return;
+    }
+    setTeamActionLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { error } = await supabase
+        .from('ts_v2025_team_members')
+        .insert({ team_id: teamId, user_id: user.id, role: 'member', status: 'pending' });
+      if (error) throw error;
+      await fetchTeamData();
+    } catch (err: any) {
+      alert('Failed to request team join: ' + (err.message || err));
+    } finally {
+      setTeamActionLoading(false);
+    }
+  };
+
+  const handleCancelRequest = async () => {
+    if (!teamMembership) return;
+    setTeamActionLoading(true);
+    try {
+      await supabase.from('ts_v2025_team_members').delete().eq('id', teamMembership.id);
+      await fetchTeamData();
+    } catch (err: any) {
+      alert('Failed to cancel request: ' + (err.message || err));
+    } finally {
+      setTeamActionLoading(false);
+    }
+  };
+
+  const handleLeaveTeam = async () => {
+    if (!teamMembership) return;
+    if (teamMembership.role === 'leader') {
+      alert('Team leaders should disband the team instead of leaving.');
+      return;
+    }
+    setTeamActionLoading(true);
+    try {
+      const teamId = teamMembership.team_id;
+      await supabase.from('ts_v2025_team_members').delete().eq('id', teamMembership.id);
+      await cleanupTeamIfEmpty(teamId);
+      await fetchTeamData();
+    } catch (err: any) {
+      alert('Failed to leave team: ' + (err.message || err));
+    } finally {
+      setTeamActionLoading(false);
+    }
+  };
+
+  const handleDisbandTeam = async () => {
+    if (!teamMembership?.team_id) return;
+    if (!confirm('Disband this team? All members will be removed.')) return;
+    setTeamActionLoading(true);
+    try {
+      await supabase.from('ts_v2025_teams').delete().eq('id', teamMembership.team_id);
+      await fetchTeamData();
+    } catch (err: any) {
+      alert('Failed to disband team: ' + (err.message || err));
+    } finally {
+      setTeamActionLoading(false);
+    }
+  };
+
+  const handleApproveMember = async (memberId: string) => {
+    setTeamActionLoading(true);
+    try {
+      await supabase.from('ts_v2025_team_members').update({ status: 'approved' }).eq('id', memberId);
+      await fetchTeamData();
+    } catch (err: any) {
+      alert('Failed to approve member: ' + (err.message || err));
+    } finally {
+      setTeamActionLoading(false);
+    }
+  };
+
+  const handleRejectMember = async (memberId: string) => {
+    setTeamActionLoading(true);
+    try {
+      await supabase.from('ts_v2025_team_members').delete().eq('id', memberId);
+      await fetchTeamData();
+    } catch (err: any) {
+      alert('Failed to reject member: ' + (err.message || err));
+    } finally {
+      setTeamActionLoading(false);
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string, teamId: string) => {
+    setTeamActionLoading(true);
+    try {
+      await supabase.from('ts_v2025_team_members').delete().eq('id', memberId);
+      await cleanupTeamIfEmpty(teamId);
+      await fetchTeamData();
+    } catch (err: any) {
+      alert('Failed to remove member: ' + (err.message || err));
+    } finally {
+      setTeamActionLoading(false);
     }
   };
 
@@ -264,54 +493,234 @@ const Profile = () => {
           </div>
         </form>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white p-6 sm:p-10 rounded-xl border border-gray-200 shadow-sm">
-            <h2 className="text-sm font-bold text-gray-400 mb-8 uppercase tracking-widest flex items-center gap-2">
-              <Icon icon="solar:notebook-bold" fontSize={20} className="text-indigo-400" />
-              Academic Profile
-            </h2>
-            <div className="space-y-6">
-              {[
-                { label: 'Roll Number', val: profile?.roll_no, icon: 'solar:ticket-bold', color: 'text-amber-600', bg: 'bg-amber-50' },
-                { label: 'Branch', val: profile?.branch, icon: 'solar:square-academic-cap-bold', color: 'text-blue-600', bg: 'bg-blue-50' },
-                { label: 'Semester', val: profile?.semester, icon: 'solar:calendar-bold', color: 'text-purple-600', bg: 'bg-purple-50' },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-5 group">
-                  <div className={`w-12 h-12 ${item.bg} rounded-xl flex items-center justify-center ${item.color} group-hover:scale-110 transition-transform shadow-sm`}><Icon icon={item.icon} fontSize={24} /></div>
-                  <div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">{item.label}</p>
-                    <p className="font-bold text-base text-[#212B36]">{item.val || 'Not set'}</p>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white p-6 sm:p-10 rounded-xl border border-gray-200 shadow-sm">
+              <h2 className="text-sm font-bold text-gray-400 mb-8 uppercase tracking-widest flex items-center gap-2">
+                <Icon icon="solar:notebook-bold" fontSize={20} className="text-indigo-400" />
+                Academic Profile
+              </h2>
+              <div className="space-y-6">
+                {[
+                  { label: 'Roll Number', val: profile?.roll_no, icon: 'solar:ticket-bold', color: 'text-amber-600', bg: 'bg-amber-50' },
+                  { label: 'Branch', val: profile?.branch, icon: 'solar:square-academic-cap-bold', color: 'text-blue-600', bg: 'bg-blue-50' },
+                  { label: 'Semester', val: profile?.semester, icon: 'solar:calendar-bold', color: 'text-purple-600', bg: 'bg-purple-50' },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-5 group">
+                    <div className={`w-12 h-12 ${item.bg} rounded-xl flex items-center justify-center ${item.color} group-hover:scale-110 transition-transform shadow-sm`}><Icon icon={item.icon} fontSize={24} /></div>
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">{item.label}</p>
+                      <p className="font-bold text-base text-[#212B36]">{item.val || 'Not set'}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white p-6 sm:p-10 rounded-xl border border-gray-200 shadow-sm">
+              <h2 className="text-sm font-bold text-gray-400 mb-8 uppercase tracking-widest flex items-center gap-2">
+                <Icon icon="solar:globus-bold" fontSize={20} className="text-indigo-400" />
+                Digital Presence
+              </h2>
+              <div className="space-y-3.5">
+                {socialLinks.map((s, i) => profile?.[s.id] ? (
+                  <a key={i} href={profile[s.id]} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl border border-gray-100 hover:bg-white hover:shadow-md hover:border-gray-200 transition-all group">
+                    <div className="flex items-center gap-4">
+                      <Icon icon={s.icon} className={s.color} fontSize={24} />
+                      <span className="text-sm font-bold text-gray-700">{s.label}</span>
+                    </div>
+                    <Icon icon="solar:arrow-right-up-linear" className="text-gray-300 group-hover:text-indigo-600 transition-colors" fontSize={18} />
+                  </a>
+                ) : null)}
+                {profile?.whatsapp && (
+                  <a href={`https://wa.me/${profile.whatsapp}`} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl border border-gray-100 hover:bg-white hover:shadow-md hover:border-gray-200 transition-all group">
+                    <div className="flex items-center gap-4">
+                      <Icon icon="solar:phone-calling-bold" className="text-emerald-600" fontSize={24} />
+                      <span className="text-sm font-bold text-gray-700">WhatsApp</span>
+                    </div>
+                    <Icon icon="solar:arrow-right-up-linear" className="text-gray-300 group-hover:text-indigo-600 transition-colors" fontSize={18} />
+                  </a>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 sm:p-10 rounded-xl border border-gray-200 shadow-sm">
-            <h2 className="text-sm font-bold text-gray-400 mb-8 uppercase tracking-widest flex items-center gap-2">
-              <Icon icon="solar:globus-bold" fontSize={20} className="text-indigo-400" />
-              Digital Presence
-            </h2>
-            <div className="space-y-3.5">
-              {socialLinks.map((s, i) => profile?.[s.id] ? (
-                <a key={i} href={profile[s.id]} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl border border-gray-100 hover:bg-white hover:shadow-md hover:border-gray-200 transition-all group">
-                  <div className="flex items-center gap-4">
-                    <Icon icon={s.icon} className={s.color} fontSize={24} />
-                    <span className="text-sm font-bold text-gray-700">{s.label}</span>
-                  </div>
-                  <Icon icon="solar:arrow-right-up-linear" className="text-gray-300 group-hover:text-indigo-600 transition-colors" fontSize={18} />
-                </a>
-              ) : null)}
-              {profile?.whatsapp && (
-                <a href={`https://wa.me/${profile.whatsapp}`} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl border border-gray-100 hover:bg-white hover:shadow-md hover:border-gray-200 transition-all group">
-                  <div className="flex items-center gap-4">
-                    <Icon icon="solar:phone-calling-bold" className="text-emerald-600" fontSize={24} />
-                    <span className="text-sm font-bold text-gray-700">WhatsApp</span>
-                  </div>
-                  <Icon icon="solar:arrow-right-up-linear" className="text-gray-300 group-hover:text-indigo-600 transition-colors" fontSize={18} />
-                </a>
+          <div className="bg-white p-6 sm:p-10 rounded-xl border border-gray-200 shadow-sm space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                <Icon icon="solar:users-group-rounded-bold" fontSize={20} className="text-indigo-400" />
+                Team Hub
+              </h2>
+              {teamMembership && (
+                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${teamMembership.status === 'pending' ? 'bg-amber-50 text-amber-600' : teamMembership.role === 'leader' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                  {teamMembership.status === 'pending' ? 'Pending' : teamMembership.role === 'leader' ? 'Leader' : 'Member'}
+                </span>
               )}
             </div>
+
+            {teamLoading ? (
+              <div className="py-10 flex items-center justify-center">
+                <div className="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
+              </div>
+            ) : teamMembership ? (
+              <div className="space-y-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Team Name</p>
+                    <p className="text-lg font-bold text-[#212B36]">{teamMembership.team?.name || 'Team'}</p>
+                    <p className="text-xs text-gray-500 font-medium">
+                      Status: {teamMembership.status === 'pending' ? 'Awaiting approval' : 'Active'}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {teamMembership.status === 'pending' ? (
+                      <button
+                        onClick={handleCancelRequest}
+                        className="px-4 py-2 bg-amber-50 text-amber-700 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-amber-100 transition-all"
+                        disabled={teamActionLoading}
+                      >
+                        Cancel Request
+                      </button>
+                    ) : teamMembership.role === 'leader' ? (
+                      <button
+                        onClick={handleDisbandTeam}
+                        className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-red-100 transition-all"
+                        disabled={teamActionLoading}
+                      >
+                        Disband Team
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleLeaveTeam}
+                        className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-red-100 transition-all"
+                        disabled={teamActionLoading}
+                      >
+                        Leave Team
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {teamMembers.length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Members</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {teamMembers.map((member: any) => (
+                        <div key={member.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                          <div>
+                            <p className="text-sm font-bold text-gray-800">{member.profiles?.full_name || 'Member'}</p>
+                            <p className="text-[11px] text-gray-500">{member.profiles?.email || 'No email'}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${member.status === 'pending' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                              {member.status}
+                            </span>
+                            {teamMembership.role === 'leader' && member.role !== 'leader' && member.status !== 'pending' && (
+                              <button
+                                onClick={() => handleRemoveMember(member.id, teamMembership.team_id)}
+                                className="text-[10px] font-bold uppercase text-red-500 hover:text-red-700"
+                                disabled={teamActionLoading}
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {teamMembership.role === 'leader' && teamRequests.length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Pending Requests</p>
+                    <div className="space-y-2">
+                      {teamRequests.map((req: any) => (
+                        <div key={req.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 bg-amber-50/60 rounded-xl border border-amber-100">
+                          <div>
+                            <p className="text-sm font-bold text-gray-800">{req.profiles?.full_name || 'Member'}</p>
+                            <p className="text-[11px] text-gray-500">{req.profiles?.email || 'No email'}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleApproveMember(req.id)}
+                              className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider"
+                              disabled={teamActionLoading}
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleRejectMember(req.id)}
+                              className="px-3 py-1.5 bg-white text-amber-700 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-amber-200"
+                              disabled={teamActionLoading}
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Create Team</p>
+                  <input
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium"
+                    value={createTeamName}
+                    onChange={(e) => setCreateTeamName(e.target.value)}
+                    placeholder="Unique team name"
+                  />
+                  <button
+                    onClick={handleCreateTeam}
+                    disabled={teamActionLoading}
+                    className="w-full py-3 bg-indigo-600 text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-indigo-700 transition-all disabled:opacity-60"
+                  >
+                    Create Team
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Join Team</p>
+                  <div className="flex gap-2">
+                    <input
+                      className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium"
+                      value={teamSearch}
+                      onChange={(e) => setTeamSearch(e.target.value)}
+                      placeholder="Search by team name"
+                    />
+                    <button
+                      onClick={handleSearchTeams}
+                      disabled={teamActionLoading}
+                      className="px-4 py-3 bg-gray-900 text-white rounded-lg text-xs font-bold uppercase tracking-wider"
+                    >
+                      Search
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {!teamSearch.trim() ? (
+                      <p className="text-xs text-gray-400">Search by team name to request a join.</p>
+                    ) : teamResults.length === 0 ? (
+                      <p className="text-xs text-gray-400">No teams matched that name.</p>
+                    ) : (
+                      teamResults.map((team: any) => (
+                        <div key={team.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                          <span className="text-sm font-bold text-gray-700">{team.name}</span>
+                          <button
+                            onClick={() => handleJoinTeam(team.id)}
+                            className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider"
+                            disabled={teamActionLoading}
+                          >
+                            Request Join
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

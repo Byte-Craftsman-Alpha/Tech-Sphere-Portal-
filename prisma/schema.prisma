@@ -97,3 +97,29 @@ model Submission {
   @@unique([event_id, user_id])
   @@map("ts_v2025_submissions")
 }
+
+model Team {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String       @unique
+  leader_id  String?      @db.Uuid
+  created_at DateTime?    @default(now()) @db.Timestamptz()
+  updated_at DateTime?    @default(now()) @db.Timestamptz()
+
+  members TeamMember[]
+
+  @@map("ts_v2025_teams")
+}
+
+model TeamMember {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  team_id    String   @db.Uuid
+  user_id    String   @unique @db.Uuid
+  role       String?  @default("member")
+  status     String?  @default("pending")
+  created_at DateTime? @default(now()) @db.Timestamptz()
+  updated_at DateTime? @default(now()) @db.Timestamptz()
+
+  team Team @relation(fields: [team_id], references: [id], onDelete: Cascade)
+
+  @@map("ts_v2025_team_members")
+}

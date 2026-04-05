@@ -159,7 +159,7 @@ const AdminChallenges = () => {
   };
 
   const addFormField = () => {
-    setCustomForm([...customForm, { id: crypto.randomUUID(), label: '', type: 'text', required: false, options: '', regex: '' }]);
+    setCustomForm([...customForm, { id: crypto.randomUUID(), label: '', type: 'text', required: false, options: '', regex: '', constraint: 'none' }]);
   };
 
   const updateFormField = (id: string, field: string, value: any) => {
@@ -499,7 +499,7 @@ const AdminChallenges = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+              <div className="space-y-8">
                 <div className="space-y-8">
                   <section className="space-y-4">
                     <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Core Information</h3>
@@ -539,89 +539,123 @@ const AdminChallenges = () => {
                       </div>
                       <div className="space-y-3">
                         {customForm.map((field) => (
-                          <div key={field.id} className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm space-y-4 hover:border-indigo-100 transition-all">
-                            <div className="flex flex-col md:flex-row items-center gap-3">
-                              <input 
-                                className="flex-1 w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs font-bold" 
-                                value={field.label} 
-                                onChange={e => updateFormField(field.id, 'label', e.target.value)} 
-                                placeholder="GitHub Profile, Lab ID, etc." 
-                              />
-                              <select 
-                                className="w-full md:w-32 px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs font-bold" 
-                                value={field.type} 
-                                onChange={e => updateFormField(field.id, 'type', e.target.value)}
-                              >
-                                <option value="text">Text</option>
-                                <option value="number">Number</option>
-                                <option value="textarea">Long Text</option>
-                                <option value="select">Dropdown</option>
-                                <option value="radio">Radio</option>
-                                <option value="checkbox">Checkboxes</option>
-                              </select>
-                              <button type="button" onClick={() => removeFormField(field.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all"><Icon icon="solar:trash-bin-minimalistic-bold" fontSize={18} /></button>
+                          <div key={field.id} className="p-5 bg-white rounded-xl border border-gray-100 shadow-sm space-y-4 relative group transition-all hover:border-indigo-100">
+                            <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+                              <div className="flex-1 w-full space-y-1">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Field Label</label>
+                                <input 
+                                  className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium" 
+                                  value={field.label} 
+                                  onChange={e => updateFormField(field.id, 'label', e.target.value)} 
+                                  placeholder="GitHub Profile, Lab ID, etc." 
+                                />
+                              </div>
+                              <div className="w-full md:w-40 space-y-1">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Type</label>
+                                <select 
+                                  className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium" 
+                                  value={field.type} 
+                                  onChange={e => updateFormField(field.id, 'type', e.target.value)}
+                                >
+                                  <option value="text">Text Input</option>
+                                  <option value="number">Number Input</option>
+                                  <option value="textarea">Long Text</option>
+                                  <option value="select">Dropdown</option>
+                                  <option value="radio">Radio Options</option>
+                                  <option value="checkbox">Checkboxes</option>
+                                </select>
+                              </div>
+                              <div className="w-full md:w-36 space-y-1">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Constraint</label>
+                                <select
+                                  className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-[13px] outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium"
+                                  value={field.constraint || 'none'}
+                                  onChange={e => updateFormField(field.id, 'constraint', e.target.value)}
+                                >
+                                  <option value="none">None</option>
+                                  <option value="unique">Unique</option>
+                                </select>
+                              </div>
+                              <div className="md:pt-5 flex items-center gap-3 w-full md:w-auto">
+                                <button 
+                                  type="button" 
+                                  onClick={() => updateFormField(field.id, 'required', !field.required)}
+                                  className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border transition-all ${field.required ? 'bg-indigo-50 border-indigo-100 text-indigo-600' : 'bg-gray-50 border-gray-100 text-gray-400'}`}
+                                >
+                                  <Icon icon={field.required ? "solar:check-square-bold" : "solar:square-minimalistic-linear"} />
+                                  <span className="text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">Required</span>
+                                </button>
+                                <button 
+                                  type="button" 
+                                  onClick={() => removeFormField(field.id)} 
+                                  className="p-2.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all shadow-sm"
+                                >
+                                  <Icon icon="solar:trash-bin-minimalistic-bold" fontSize={18} />
+                                </button>
+                              </div>
                             </div>
+
+                            {(field.type === 'select' || field.type === 'radio' || field.type === 'checkbox') && (
+                              <div className="space-y-1 animate-in slide-in-from-top-2 duration-200 border-l-2 border-indigo-500 pl-4 py-1">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Options (comma separated)</label>
+                                <input 
+                                  className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium" 
+                                  value={field.options || ''} 
+                                  onChange={e => updateFormField(field.id, 'options', e.target.value)} 
+                                  placeholder="Option A, Option B" 
+                                />
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
                     </section>
                   )}
                 </div>
-
-                <div className="space-y-8">
-                  <section className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Challenge Pass Settings</h3>
-                      <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 scale-90 text-[10px] font-bold uppercase">
-                        <span>Enable Passes</span>
-                        <button type="button" onClick={() => setHasPasses(!hasPasses)} className={`w-8 h-4 rounded-full relative transition-colors ${hasPasses ? 'bg-indigo-500' : 'bg-gray-300'}`}>
-                          <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform ${hasPasses ? 'left-4.5' : 'left-0.5'}`} />
-                        </button>
-                      </div>
+                <section className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Challenge Pass Settings</h3>
+                    <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 scale-90 text-[10px] font-bold uppercase">
+                      <span>Enable Passes</span>
+                      <button type="button" onClick={() => setHasPasses(!hasPasses)} className={`w-8 h-4 rounded-full relative transition-colors ${hasPasses ? 'bg-indigo-500' : 'bg-gray-300'}`}>
+                        <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform ${hasPasses ? 'left-4.5' : 'left-0.5'}`} />
+                      </button>
                     </div>
-                    {hasPasses ? (
-                      <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-6">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1.5"><label className="text-[10px] font-bold text-gray-500 uppercase">QR Scale ({passSettings.qr_size}%)</label><input type="range" min="10" max="50" value={passSettings.qr_size} onChange={e => setPassSettings({...passSettings, qr_size: parseInt(e.target.value)})} className="w-full accent-indigo-600" /></div>
-                          <div className="space-y-1.5"><label className="text-[10px] font-bold text-gray-500 uppercase">QR X ({passSettings.qr_x}%)</label><input type="range" min="0" max="100" value={passSettings.qr_x} onChange={e => setPassSettings({...passSettings, qr_x: parseInt(e.target.value)})} className="w-full accent-indigo-600" /></div>
-                          <div className="space-y-1.5 text-center col-span-2">
-                             <div className="relative w-full aspect-[3/4] max-w-[200px] mx-auto bg-[#161C24] rounded-xl overflow-hidden shadow-2xl border border-gray-800">
-                               <div className="absolute inset-0 flex flex-col items-center justify-between p-5 text-white z-10">
-                                 <div><p className="text-[6px] font-bold text-indigo-400 uppercase tracking-widest">Official Entry</p><p className="text-[9px] font-bold truncate">{formValues.title || 'Challenge'}</p></div>
-                               </div>
-                               <div className="absolute bg-white p-1 rounded shadow-2xl overflow-hidden" 
-                                    style={{ 
-                                      width: `${passSettings.qr_size}%`, 
-                                      aspectRatio: '1/1', 
-                                      left: `${passSettings.qr_x}%`, 
-                                      top: `${passSettings.qr_y}%`, 
-                                      transform: 'translate(-50%, -50%)' 
-                                    }}>
-                                 <QRCodeSVG value="preview" size={256} className="w-full h-full" />
-                               </div>
+                  </div>
+                  {hasPasses ? (
+                    <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5"><label className="text-[10px] font-bold text-gray-500 uppercase">QR Scale ({passSettings.qr_size}%)</label><input type="range" min="10" max="50" value={passSettings.qr_size} onChange={e => setPassSettings({...passSettings, qr_size: parseInt(e.target.value)})} className="w-full accent-indigo-600" /></div>
+                        <div className="space-y-1.5"><label className="text-[10px] font-bold text-gray-500 uppercase">QR X ({passSettings.qr_x}%)</label><input type="range" min="0" max="100" value={passSettings.qr_x} onChange={e => setPassSettings({...passSettings, qr_x: parseInt(e.target.value)})} className="w-full accent-indigo-600" /></div>
+                        <div className="space-y-1.5"><label className="text-[10px] font-bold text-gray-500 uppercase">QR Y ({passSettings.qr_y}%)</label><input type="range" min="0" max="100" value={passSettings.qr_y} onChange={e => setPassSettings({...passSettings, qr_y: parseInt(e.target.value)})} className="w-full accent-indigo-600" /></div>
+                        <div className="space-y-1.5"><label className="text-[10px] font-bold text-gray-500 uppercase">Pass Background URL</label><input className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs" value={passSettings.bg_image} onChange={e => setPassSettings({...passSettings, bg_image: e.target.value})} placeholder="Custom pass design..." /></div>
+                        <div className="space-y-1.5 text-center md:col-span-2">
+                           <div className="relative w-full aspect-[3/4] max-w-[200px] mx-auto bg-[#161C24] rounded-xl overflow-hidden shadow-2xl border border-gray-800">
+                             {passSettings.bg_image && <img src={passSettings.bg_image} className="absolute inset-0 w-full h-full object-cover opacity-60" />}
+                             <div className="absolute inset-0 flex flex-col items-center justify-between p-5 text-white z-10">
+                               <div><p className="text-[6px] font-bold text-indigo-400 uppercase tracking-widest">Official Entry</p><p className="text-[9px] font-bold truncate">{formValues.title || 'Challenge'}</p></div>
                              </div>
-                          </div>
-                          {(field.type === 'select' || field.type === 'radio' || field.type === 'checkbox') && (
-                            <div className="space-y-1">
-                              <label className="text-[9px] font-bold text-gray-400 uppercase">Options (comma separated)</label>
-                              <input
-                                className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs font-bold"
-                                value={field.options || ''}
-                                onChange={e => updateFormField(field.id, 'options', e.target.value)}
-                                placeholder="Option A, Option B"
-                              />
-                            </div>
-                          )}
+                             <div className="absolute bg-white p-1 rounded shadow-2xl overflow-hidden" 
+                                  style={{ 
+                                    width: `${passSettings.qr_size}%`, 
+                                    aspectRatio: '1/1', 
+                                    left: `${passSettings.qr_x}%`, 
+                                    top: `${passSettings.qr_y}%`, 
+                                    transform: 'translate(-50%, -50%)' 
+                                  }}>
+                               <QRCodeSVG value="preview" size={256} className="w-full h-full" />
+                             </div>
+                           </div>
                         </div>
                       </div>
-                    ) : (
-                      <div className="bg-gray-50/50 p-12 rounded-xl border border-dashed border-gray-200 text-center">
-                        <Icon icon="solar:ticket-bold" fontSize={48} className="text-gray-300 mb-2" />
-                        <p className="text-[10px] font-bold text-gray-400 uppercase">Passes Disabled</p>
-                      </div>
-                    )}
-                  </section>
-                </div>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50/50 p-12 rounded-xl border border-dashed border-gray-200 text-center">
+                      <Icon icon="solar:ticket-bold" fontSize={48} className="text-gray-300 mb-2" />
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">Passes Disabled</p>
+                    </div>
+                  )}
+                </section>
               </div>
 
               <div className="pt-6 border-t border-gray-100">
