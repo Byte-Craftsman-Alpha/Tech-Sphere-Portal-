@@ -780,7 +780,7 @@ const AdminEvents = () => {
               <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
               <p className="text-gray-400 text-xs font-bold uppercase tracking-widest animate-pulse">Fetching Attendee List...</p>
             </div>
-          ") : registrations.length > 0 ? (
+          ) : registrations.length > 0 ? (
             <div className="space-y-3">
               {selectedRegs.size > 0 && (
                 <div className="flex flex-wrap items-center justify-between gap-3 bg-indigo-50/60 border border-indigo-100 rounded-xl px-4 py-3">
@@ -944,7 +944,6 @@ const AdminEvents = () => {
               </div>
             </div>
           ) : (
-(
             <div className="py-20 flex flex-col items-center justify-center space-y-4">
               <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-200">
                 <Icon icon="solar:user-block-bold" fontSize={42} />

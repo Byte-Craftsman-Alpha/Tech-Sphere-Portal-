@@ -726,7 +726,7 @@ const AdminChallenges = () => {
           
           {isTracking ? (
             <div className="py-20 flex justify-center"><Icon icon="eos-icons:loading" fontSize={48} className="text-indigo-600" /></div>
-          ") : registrations.length > 0 ? (
+          ) : registrations.length > 0 ? (
             <div className="space-y-3">
               {selectedRegs.size > 0 && (
                 <div className="flex flex-wrap items-center justify-between gap-3 bg-indigo-50/60 border border-indigo-100 rounded-xl px-4 py-3">
@@ -873,7 +873,6 @@ const AdminChallenges = () => {
               </div>
             </div>
           ) : (
-(
             <div className="py-20 text-center text-gray-400 font-bold uppercase text-[10px] tracking-widest animate-pulse">No submissions tracked yet</div>
           )}
         </div>
