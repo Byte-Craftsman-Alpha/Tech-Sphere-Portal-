@@ -4,7 +4,7 @@ import { Icon } from '@iconify/react';
 import supabase from '../lib/supabase';
 import { signInWithGoogle } from '../lib/googleAuth';
 
-const BRANCHES = ['Computer Science', 'Information Technology', 'Electronics', 'Mechanical', 'BCA'];
+const BRANCHES = ['Computer Science Core', 'Computer Science AI/ML', 'Information Technology', 'Electronics', 'Mechanical', 'BCA'];
 const SEMESTERS = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
 
 const Register = () => {
