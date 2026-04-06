@@ -465,11 +465,11 @@ const AdminTeams = () => {
                           <p className="text-[11px] text-gray-500">{member.profiles?.email || member.user_id}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${member.status === 'pending' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider whitespace-nowrap ${member.status === 'pending' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}`}>
                             {member.status}
                           </span>
                           {member.role === 'leader' && (
-                            <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-600">Leader</span>
+                            <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider whitespace-nowrap bg-indigo-50 text-indigo-600">Leader</span>
                           )}
                           {member.status === 'pending' ? (
                             <button

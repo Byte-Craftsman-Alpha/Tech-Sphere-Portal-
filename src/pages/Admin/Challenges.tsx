@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import supabase from '../../lib/supabase';
 import { Skeleton } from '../../components/Skeleton';
@@ -27,10 +28,38 @@ const AdminChallenges = () => {
   const [trackingMenuOpen, setTrackingMenuOpen] = useState(false);
   const [bulkMenuOpen, setBulkMenuOpen] = useState(false);
   const [challengeMenuOpenId, setChallengeMenuOpenId] = useState<string | null>(null);
+  const [challengeMenuPos, setChallengeMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const challengeMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchChallenges();
   }, []);
+
+  useEffect(() => {
+    if (!challengeMenuOpenId) return;
+    const handleClose = () => setChallengeMenuOpenId(null);
+    window.addEventListener('scroll', handleClose, true);
+    window.addEventListener('resize', handleClose);
+    return () => {
+      window.removeEventListener('scroll', handleClose, true);
+      window.removeEventListener('resize', handleClose);
+    };
+  }, [challengeMenuOpenId]);
+
+  useEffect(() => {
+    if (!challengeMenuOpenId || !challengeMenuPos) return;
+    const el = challengeMenuRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const margin = 12;
+    const maxLeft = window.innerWidth - rect.width - margin;
+    const maxTop = window.innerHeight - rect.height - margin;
+    const nextLeft = Math.min(Math.max(margin, challengeMenuPos.left), maxLeft);
+    const nextTop = Math.min(Math.max(margin, challengeMenuPos.top), maxTop);
+    if (nextLeft !== challengeMenuPos.left || nextTop !== challengeMenuPos.top) {
+      setChallengeMenuPos({ top: nextTop, left: nextLeft });
+    }
+  }, [challengeMenuOpenId, challengeMenuPos]);
 
   useEffect(() => {
     if (currentChallenge) {
@@ -446,7 +475,7 @@ const AdminChallenges = () => {
             <div className="flex-1 space-y-1.5 min-w-0">
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-bold text-[#212B36] truncate">{c.title}</h3>
-                <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${(c.pass_settings?.is_open ?? c.is_open) !== false ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase whitespace-nowrap ${(c.pass_settings?.is_open ?? c.is_open) !== false ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
                   {(c.pass_settings?.is_open ?? c.is_open) !== false ? 'Open' : 'Closed'}
                 </span>
               </div>
@@ -458,33 +487,23 @@ const AdminChallenges = () => {
             </div>
             <div className="relative">
               <button
-                onClick={() => setChallengeMenuOpenId(challengeMenuOpenId === c.id ? null : c.id)}
+                onClick={(e) => {
+                  if (challengeMenuOpenId === c.id) {
+                    setChallengeMenuOpenId(null);
+                    return;
+                  }
+                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                  const menuWidth = 176;
+                  setChallengeMenuPos({
+                    top: rect.bottom + 8,
+                    left: Math.max(8, rect.right - menuWidth)
+                  });
+                  setChallengeMenuOpenId(c.id);
+                }}
                 className="p-2.5 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-all"
               >
                 <Icon icon="solar:menu-dots-bold" fontSize={20} />
               </button>
-              {challengeMenuOpenId === c.id && (
-                <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-100 shadow-xl rounded-xl overflow-hidden z-10">
-                  <button
-                    onClick={() => { setCurrentChallenge(c); fetchRegistrations(c.id); setChallengeMenuOpenId(null); }}
-                    className="w-full px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-gray-600 hover:bg-gray-50 flex items-center gap-2"
-                  >
-                    <Icon icon="solar:chart-2-bold" /> Track
-                  </button>
-                  <button
-                    onClick={() => { setCurrentChallenge(c); setIsModalOpen(true); setChallengeMenuOpenId(null); }}
-                    className="w-full px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-blue-600 hover:bg-blue-50 flex items-center gap-2"
-                  >
-                    <Icon icon="solar:pen-new-square-bold" /> Edit
-                  </button>
-                  <button
-                    onClick={() => { handleDelete(c.id); setChallengeMenuOpenId(null); }}
-                    className="w-full px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-red-600 hover:bg-red-50 flex items-center gap-2"
-                  >
-                    <Icon icon="solar:trash-bin-trash-bold" /> Delete
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         ))}
@@ -720,7 +739,7 @@ const AdminChallenges = () => {
       )}
 
       {showTracking && currentChallenge && (
-        <div ref={trackingRef} className="bg-white p-8 rounded-2xl border border-gray-100 shadow-xl space-y-8 animate-in slide-in-from-bottom-4 duration-500 overflow-hidden relative">
+      <div ref={trackingRef} className="bg-white p-8 rounded-2xl border border-gray-100 shadow-xl space-y-8 animate-in slide-in-from-bottom-4 duration-500 overflow-visible relative">
           <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500" />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -752,7 +771,7 @@ const AdminChallenges = () => {
                   <Icon icon="solar:settings-bold" /> Actions
                 </button>
                 {trackingMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-52 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden z-10">
+                  <div className="absolute right-0 mt-2 w-52 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden z-[9999]">
                     {!shareLink?.is_active ? (
                       <button
                         onClick={() => { updateShareLink(currentChallenge.id, 'create'); setTrackingMenuOpen(false); }}
@@ -826,7 +845,7 @@ const AdminChallenges = () => {
                       <Icon icon="solar:sort-by-alphabet-bold" /> Bulk Actions
                     </button>
                     {bulkMenuOpen && (
-                      <div className="absolute right-0 mt-2 w-52 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden z-10">
+                      <div className="absolute right-0 mt-2 w-52 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden z-[9999]">
                         <button
                           onClick={() => { handleBulkAddXp(); setBulkMenuOpen(false); }}
                           className="w-full px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-widest text-indigo-600 hover:bg-indigo-50 flex items-center gap-2"
@@ -844,7 +863,7 @@ const AdminChallenges = () => {
                   </div>
                 </div>
               )}
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto overflow-y-visible">
                 <table className="w-full">
                   <thead>
                     <tr className="text-left border-b border-gray-100">
@@ -962,6 +981,35 @@ const AdminChallenges = () => {
           )}
         </div>
       )}
+
+      {challengeMenuOpenId && challengeMenuPos && createPortal((() => {
+        const openChallenge = challenges.find(c => c.id === challengeMenuOpenId);
+        if (!openChallenge) return null;
+        return (
+          <div ref={challengeMenuRef} className="fixed z-[9999]" style={{ top: challengeMenuPos.top, left: challengeMenuPos.left }}>
+            <div className="w-44 bg-white border border-gray-100 shadow-xl rounded-xl overflow-hidden">
+              <button
+                onClick={() => { setCurrentChallenge(openChallenge); fetchRegistrations(openChallenge.id); setChallengeMenuOpenId(null); }}
+                className="w-full px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-gray-600 hover:bg-gray-50 flex items-center gap-2"
+              >
+                <Icon icon="solar:chart-2-bold" /> Track
+              </button>
+              <button
+                onClick={() => { setCurrentChallenge(openChallenge); setIsModalOpen(true); setChallengeMenuOpenId(null); }}
+                className="w-full px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+              >
+                <Icon icon="solar:pen-new-square-bold" /> Edit
+              </button>
+              <button
+                onClick={() => { handleDelete(openChallenge.id); setChallengeMenuOpenId(null); }}
+                className="w-full px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-red-600 hover:bg-red-50 flex items-center gap-2"
+              >
+                <Icon icon="solar:trash-bin-trash-bold" /> Delete
+              </button>
+            </div>
+          </div>
+        );
+      })(), document.body)}
     </div>
   );
 };

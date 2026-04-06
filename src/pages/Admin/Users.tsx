@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import supabase from '../../lib/supabase';
 import { UserSkeleton } from '../../components/Skeleton';
@@ -22,7 +23,12 @@ const AdminUsers = () => {
   const [importRows, setImportRows] = useState<any[]>([]);
   const [importError, setImportError] = useState<string | null>(null);
   const [actionsMenuUserId, setActionsMenuUserId] = useState<string | null>(null);
+  const [actionsMenuPos, setActionsMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
   const [approvalFilter, setApprovalFilter] = useState<'all' | 'pending' | 'approved'>('all');
+  const [sendDetailsLoadingUserId, setSendDetailsLoadingUserId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; title: string; message?: string } | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
   const [createForm, setCreateForm] = useState<any>({
     email: '',
     password: '',
@@ -42,6 +48,51 @@ const AdminUsers = () => {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  const showToast = (next: { type: 'success' | 'error' | 'info'; title: string; message?: string }, timeoutMs = 4500) => {
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    setToast(next);
+    toastTimerRef.current = window.setTimeout(() => setToast(null), timeoutMs);
+  };
+
+  useEffect(() => {
+    if (!actionsMenuUserId) return;
+    const handleClose = () => setActionsMenuUserId(null);
+    window.addEventListener('scroll', handleClose, true);
+    window.addEventListener('resize', handleClose);
+    return () => {
+      window.removeEventListener('scroll', handleClose, true);
+      window.removeEventListener('resize', handleClose);
+    };
+  }, [actionsMenuUserId]);
+
+  useEffect(() => {
+    if (!actionsMenuUserId || !actionsMenuPos) return;
+    const el = actionsMenuRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const margin = 12;
+    const maxLeft = window.innerWidth - rect.width - margin;
+    const maxTop = window.innerHeight - rect.height - margin;
+    const nextLeft = Math.min(Math.max(margin, actionsMenuPos.left), maxLeft);
+    const nextTop = Math.min(Math.max(margin, actionsMenuPos.top), maxTop);
+    if (nextLeft !== actionsMenuPos.left || nextTop !== actionsMenuPos.top) {
+      setActionsMenuPos({ top: nextTop, left: nextLeft });
+    }
+  }, [actionsMenuUserId, actionsMenuPos]);
+
+  const generateTempPassword = () => {
+    const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const lower = 'abcdefghijkmnopqrstuvwxyz';
+    const digits = '23456789';
+    const symbols = '!@#$%&*?';
+    const all = `${upper}${lower}${digits}${symbols}`;
+    const length = 12;
+    const pick = (set: string) => set[Math.floor(Math.random() * set.length)];
+    let pwd = `${pick(upper)}${pick(lower)}${pick(digits)}${pick(symbols)}`;
+    for (let i = pwd.length; i < length; i += 1) pwd += pick(all);
+    return pwd.split('').sort(() => Math.random() - 0.5).join('');
+  };
 
   const fetchUsers = async () => {
     try {
@@ -394,6 +445,62 @@ const AdminUsers = () => {
     }
   };
 
+  const handleSendUserDetails = async (user: any) => {
+    if (!user?.id) return;
+    const ok = window.confirm(`Send account details to ${user.full_name || user.email}? This will reset their password.`);
+    if (!ok) return;
+    const tempPass = generateTempPassword();
+
+    setSendDetailsLoadingUserId(user.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/admin-send-user-details', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ user_id: user.id, temp_password: tempPass })
+      });
+
+      const text = await res.text();
+      if (text.startsWith('import')) {
+        throw new Error('Local API is not running. Please use "vercel dev" or deploy the app to send emails.');
+      }
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        throw new Error('Invalid server response. Please ensure you are running with "vercel dev".');
+      }
+
+      if (!res.ok) throw new Error(data.error || 'Server error');
+
+      if (data.sent) {
+        showToast({
+          type: 'success',
+          title: 'Email sent',
+          message: `Account details were sent to ${user.email}.`
+        });
+      } else {
+        showToast({
+          type: 'error',
+          title: 'Email not sent',
+          message: data.reason || 'Email could not be sent. Check SMTP settings.'
+        });
+      }
+    } catch (err: any) {
+      showToast({
+        type: 'error',
+        title: 'Send failed',
+        message: err.message || 'Unable to send email.'
+      });
+    } finally {
+      setSendDetailsLoadingUserId(null);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -447,7 +554,7 @@ const AdminUsers = () => {
         </span>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-visible">
         {loading ? (
           <div className="divide-y divide-gray-100">
             {[1, 2, 3, 4, 5].map(i => <UserSkeleton key={i} />)}
@@ -466,7 +573,7 @@ const AdminUsers = () => {
             actionLink="/home"
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-visible">
             <table className="w-full">
               <thead>
                 <tr className="text-left border-b border-gray-100 bg-gray-50/50">
@@ -497,52 +604,40 @@ const AdminUsers = () => {
                       <p className="text-[10px] text-gray-400 font-bold uppercase whitespace-nowrap">{user.semester} Sem</p>
                     </td>
                     <td className="py-4 px-6 text-center">
-                      <span className="px-2 py-1 bg-amber-50 text-amber-600 rounded-md text-[10px] font-black tracking-wider border border-amber-100 shadow-sm">
+                      <span className="px-2 py-1 bg-amber-50 text-amber-600 rounded-md text-[10px] font-black tracking-wider border border-amber-100 shadow-sm whitespace-nowrap">
                         {user.points || 0} XP
                       </span>
                     </td>
                     <td className="py-4 px-6">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${user.approved ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${user.approved ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
                         {user.approved ? 'Approved' : 'Pending'}
                       </span>
                     </td>
                     <td className="py-4 px-6">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${user.role?.toLowerCase() === 'admin' ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${user.role?.toLowerCase() === 'admin' ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
                         {user.role}
                       </span>
                     </td>
                     <td className="py-4 px-6 text-right">
                       <div className="relative inline-block text-left">
                         <button
-                          onClick={() => setActionsMenuUserId(actionsMenuUserId === user.id ? null : user.id)}
+                          onClick={(e) => {
+                            if (actionsMenuUserId === user.id) {
+                              setActionsMenuUserId(null);
+                              return;
+                            }
+                            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                            const menuWidth = 192;
+                            setActionsMenuPos({
+                              top: rect.bottom + 8,
+                              left: Math.max(8, rect.right - menuWidth)
+                            });
+                            setActionsMenuUserId(user.id);
+                          }}
                           className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-indigo-600"
                         >
                           <Icon icon="solar:menu-dots-bold" fontSize={20} />
                         </button>
-                        {actionsMenuUserId === user.id && (
-                          <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-100 shadow-xl rounded-xl overflow-hidden z-10">
-                            <button
-                              onClick={() => { setSelectedUser(user); setActionsMenuUserId(null); }}
-                              className="w-full px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-indigo-600 hover:bg-indigo-50 flex items-center gap-2"
-                            >
-                              <Icon icon="solar:pen-new-square-bold" /> Edit
-                            </button>
-                            <button
-                              onClick={() => { handleSetApproval(user.id, !user.approved); setActionsMenuUserId(null); }}
-                              className={`w-full px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider ${user.approved ? 'text-amber-600 hover:bg-amber-50' : 'text-green-600 hover:bg-green-50'} flex items-center gap-2`}
-                            >
-                              <Icon icon={user.approved ? 'solar:close-circle-bold' : 'solar:check-circle-bold'} />
-                              {user.approved ? 'Mark Pending' : 'Approve'}
-                            </button>
-                            <button
-                              onClick={() => { handleDeleteUser(user.id, user.role); setActionsMenuUserId(null); }}
-                              disabled={deleteLoading === user.id}
-                              className="w-full px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-red-600 hover:bg-red-50 flex items-center gap-2 disabled:opacity-50"
-                            >
-                              <Icon icon="solar:trash-bin-trash-bold" /> Delete
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </td>
                   </tr>
@@ -855,6 +950,84 @@ const AdminUsers = () => {
           </div>
         </div>
       )}
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[120]">
+          <div className={`min-w-[260px] max-w-[360px] rounded-xl border px-4 py-3 shadow-xl ${
+            toast.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+              : toast.type === 'error'
+                ? 'bg-red-50 border-red-200 text-red-700'
+                : 'bg-indigo-50 border-indigo-200 text-indigo-700'
+          }`}>
+            <div className="flex items-start gap-3">
+              <Icon
+                icon={
+                  toast.type === 'success'
+                    ? 'solar:check-circle-bold'
+                    : toast.type === 'error'
+                      ? 'solar:danger-bold'
+                      : 'solar:info-circle-bold'
+                }
+                fontSize={18}
+              />
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-wider">{toast.title}</div>
+                {toast.message && <div className="text-xs font-medium mt-1">{toast.message}</div>}
+              </div>
+              <button
+                onClick={() => setToast(null)}
+                className="ml-auto text-xs font-bold opacity-60 hover:opacity-100"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {actionsMenuUserId && actionsMenuPos && createPortal((() => {
+        const openUser = users.find(u => u.id === actionsMenuUserId);
+        if (!openUser) return null;
+        return (
+          <div
+            ref={actionsMenuRef}
+            className="fixed z-[9999]"
+            style={{ top: actionsMenuPos.top, left: actionsMenuPos.left }}
+          >
+            <div className="w-48 bg-white border border-gray-100 shadow-xl rounded-xl overflow-hidden">
+              <button
+                onClick={() => { setSelectedUser(openUser); setActionsMenuUserId(null); }}
+                className="w-full px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-indigo-600 hover:bg-indigo-50 flex items-center gap-2"
+              >
+                <Icon icon="solar:pen-new-square-bold" /> Edit
+              </button>
+              <button
+                onClick={() => { handleSendUserDetails(openUser); setActionsMenuUserId(null); }}
+                disabled={sendDetailsLoadingUserId === openUser.id}
+                className="w-full px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-sky-600 hover:bg-sky-50 flex items-center gap-2 disabled:opacity-50"
+              >
+                <Icon icon="solar:mailbox-bold" />
+                {sendDetailsLoadingUserId === openUser.id ? 'Sending...' : 'Send Details'}
+              </button>
+              <button
+                onClick={() => { handleSetApproval(openUser.id, !openUser.approved); setActionsMenuUserId(null); }}
+                className={`w-full px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider ${openUser.approved ? 'text-amber-600 hover:bg-amber-50' : 'text-green-600 hover:bg-green-50'} flex items-center gap-2`}
+              >
+                <Icon icon={openUser.approved ? 'solar:close-circle-bold' : 'solar:check-circle-bold'} />
+                {openUser.approved ? 'Mark Pending' : 'Approve'}
+              </button>
+              <button
+                onClick={() => { handleDeleteUser(openUser.id, openUser.role); setActionsMenuUserId(null); }}
+                disabled={deleteLoading === openUser.id}
+                className="w-full px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-red-600 hover:bg-red-50 flex items-center gap-2 disabled:opacity-50"
+              >
+                <Icon icon="solar:trash-bin-trash-bold" /> Delete
+              </button>
+            </div>
+          </div>
+        );
+      })(), document.body)}
     </div>
   );
 };

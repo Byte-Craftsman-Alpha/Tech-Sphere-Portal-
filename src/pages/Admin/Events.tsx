@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import supabase from '../../lib/supabase';
 import { Skeleton } from '../../components/Skeleton';
@@ -27,10 +28,38 @@ const AdminEvents = () => {
   const [trackingMenuOpen, setTrackingMenuOpen] = useState(false);
   const [bulkMenuOpen, setBulkMenuOpen] = useState(false);
   const [eventMenuOpenId, setEventMenuOpenId] = useState<string | null>(null);
+  const [eventMenuPos, setEventMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const eventMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchEvents();
   }, []);
+
+  useEffect(() => {
+    if (!eventMenuOpenId) return;
+    const handleClose = () => setEventMenuOpenId(null);
+    window.addEventListener('scroll', handleClose, true);
+    window.addEventListener('resize', handleClose);
+    return () => {
+      window.removeEventListener('scroll', handleClose, true);
+      window.removeEventListener('resize', handleClose);
+    };
+  }, [eventMenuOpenId]);
+
+  useEffect(() => {
+    if (!eventMenuOpenId || !eventMenuPos) return;
+    const el = eventMenuRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const margin = 12;
+    const maxLeft = window.innerWidth - rect.width - margin;
+    const maxTop = window.innerHeight - rect.height - margin;
+    const nextLeft = Math.min(Math.max(margin, eventMenuPos.left), maxLeft);
+    const nextTop = Math.min(Math.max(margin, eventMenuPos.top), maxTop);
+    if (nextLeft !== eventMenuPos.left || nextTop !== eventMenuPos.top) {
+      setEventMenuPos({ top: nextTop, left: nextLeft });
+    }
+  }, [eventMenuOpenId, eventMenuPos]);
 
   useEffect(() => {
     if (currentEvent) {
@@ -452,7 +481,7 @@ const AdminEvents = () => {
             <div className="flex-1 space-y-1.5 min-w-0">
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-bold text-[#212B36] truncate">{event.title}</h3>
-                <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${(event.pass_settings?.is_open ?? event.is_open) !== false ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase whitespace-nowrap ${(event.pass_settings?.is_open ?? event.is_open) !== false ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
                   {(event.pass_settings?.is_open ?? event.is_open) !== false ? 'Open' : 'Closed'}
                 </span>
               </div>
@@ -464,33 +493,23 @@ const AdminEvents = () => {
             </div>
             <div className="relative">
               <button
-                onClick={() => setEventMenuOpenId(eventMenuOpenId === event.id ? null : event.id)}
+                onClick={(e) => {
+                  if (eventMenuOpenId === event.id) {
+                    setEventMenuOpenId(null);
+                    return;
+                  }
+                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                  const menuWidth = 176;
+                  setEventMenuPos({
+                    top: rect.bottom + 8,
+                    left: Math.max(8, rect.right - menuWidth)
+                  });
+                  setEventMenuOpenId(event.id);
+                }}
                 className="p-2.5 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-all"
               >
                 <Icon icon="solar:menu-dots-bold" fontSize={20} />
               </button>
-              {eventMenuOpenId === event.id && (
-                <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-100 shadow-xl rounded-xl overflow-hidden z-10">
-                  <button
-                    onClick={() => { setCurrentEvent(event); fetchRegistrations(event.id); setEventMenuOpenId(null); }}
-                    className="w-full px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-gray-600 hover:bg-gray-50 flex items-center gap-2"
-                  >
-                    <Icon icon="solar:chart-2-bold" /> Tracking
-                  </button>
-                  <button
-                    onClick={() => { setCurrentEvent(event); setIsModalOpen(true); setEventMenuOpenId(null); }}
-                    className="w-full px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-blue-600 hover:bg-blue-50 flex items-center gap-2"
-                  >
-                    <Icon icon="solar:pen-new-square-bold" /> Edit
-                  </button>
-                  <button
-                    onClick={() => { handleDelete(event.id); setEventMenuOpenId(null); }}
-                    className="w-full px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-red-600 hover:bg-red-50 flex items-center gap-2"
-                  >
-                    <Icon icon="solar:trash-bin-trash-bold" /> Delete
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         ))}
@@ -739,7 +758,7 @@ const AdminEvents = () => {
 
       {/* Registrations Tracking Section */}
       {showTracking && currentEvent && (
-        <div ref={trackingRef} className="bg-white p-8 rounded-2xl border border-gray-100 shadow-xl space-y-8 animate-in slide-in-from-bottom-4 duration-500 overflow-hidden relative">
+      <div ref={trackingRef} className="bg-white p-8 rounded-2xl border border-gray-100 shadow-xl space-y-8 animate-in slide-in-from-bottom-4 duration-500 overflow-visible relative">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500" />
           
           <div className="flex items-center justify-between">
@@ -777,7 +796,7 @@ const AdminEvents = () => {
                   <Icon icon="solar:settings-bold" /> Actions
                 </button>
                 {trackingMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-52 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden z-10">
+                  <div className="absolute right-0 mt-2 w-52 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden z-[9999]">
                     {!shareLink?.is_active ? (
                       <button
                         onClick={() => { updateShareLink(currentEvent.id, 'create'); setTrackingMenuOpen(false); }}
@@ -854,7 +873,7 @@ const AdminEvents = () => {
                       <Icon icon="solar:sort-by-alphabet-bold" /> Bulk Actions
                     </button>
                     {bulkMenuOpen && (
-                      <div className="absolute right-0 mt-2 w-52 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden z-10">
+                      <div className="absolute right-0 mt-2 w-52 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden z-[9999]">
                         <button
                           onClick={() => { handleBulkAddXp(); setBulkMenuOpen(false); }}
                           className="w-full px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-widest text-indigo-600 hover:bg-indigo-50 flex items-center gap-2"
@@ -872,7 +891,7 @@ const AdminEvents = () => {
                   </div>
                 </div>
               )}
-              <div className="overflow-x-auto -mx-8 sm:mx-0">
+              <div className="overflow-x-auto overflow-y-visible -mx-8 sm:mx-0">
                 <table className="w-full">
                   <thead>
                     <tr className="text-left border-b border-gray-100 bg-gray-50/30">
@@ -1015,6 +1034,35 @@ const AdminEvents = () => {
           )}
         </div>
       )}
+
+      {eventMenuOpenId && eventMenuPos && createPortal((() => {
+        const openEvent = events.find(e => e.id === eventMenuOpenId);
+        if (!openEvent) return null;
+        return (
+          <div ref={eventMenuRef} className="fixed z-[9999]" style={{ top: eventMenuPos.top, left: eventMenuPos.left }}>
+            <div className="w-44 bg-white border border-gray-100 shadow-xl rounded-xl overflow-hidden">
+              <button
+                onClick={() => { setCurrentEvent(openEvent); fetchRegistrations(openEvent.id); setEventMenuOpenId(null); }}
+                className="w-full px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-gray-600 hover:bg-gray-50 flex items-center gap-2"
+              >
+                <Icon icon="solar:chart-2-bold" /> Tracking
+              </button>
+              <button
+                onClick={() => { setCurrentEvent(openEvent); setIsModalOpen(true); setEventMenuOpenId(null); }}
+                className="w-full px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+              >
+                <Icon icon="solar:pen-new-square-bold" /> Edit
+              </button>
+              <button
+                onClick={() => { handleDelete(openEvent.id); setEventMenuOpenId(null); }}
+                className="w-full px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-red-600 hover:bg-red-50 flex items-center gap-2"
+              >
+                <Icon icon="solar:trash-bin-trash-bold" /> Delete
+              </button>
+            </div>
+          </div>
+        );
+      })(), document.body)}
     </div>
   );
 };

@@ -21,6 +21,12 @@ const Profile = () => {
   const [createTeamName, setCreateTeamName] = useState('');
   const [teamSearch, setTeamSearch] = useState('');
   const [teamResults, setTeamResults] = useState<any[]>([]);
+  const [showSecurity, setShowSecurity] = useState(false);
+  const [passwordOtp, setPasswordOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProfile();
@@ -330,13 +336,60 @@ const Profile = () => {
     }
   };
 
-  const handleResetPassword = async () => {
-    if (!profile?.email) return;
-    const { error } = await supabase.auth.resetPasswordForEmail(profile.email, {
-      redirectTo: window.location.origin + '/login',
-    });
-    if (error) alert(error.message);
-    else alert('Password reset link sent to your email.');
+  const handleSendPasswordOtp = async () => {
+    setPasswordError(null);
+    setPasswordMessage(null);
+    if (!profile?.email) {
+      setPasswordError('Email not available for this account.');
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      const res = await fetch('/api/send-password-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: profile.email })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send OTP');
+      if (data.otp) setPasswordMessage(`DEV MODE: Your OTP is ${data.otp}`);
+      else setPasswordMessage('Verification code sent to your email.');
+    } catch (err: any) {
+      setPasswordError(err.message || 'Failed to send OTP');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError(null);
+    setPasswordMessage(null);
+    if (!passwordOtp || !newPassword) {
+      setPasswordError('OTP and new password are required');
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      const res = await fetch('/api/change-password-with-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: profile?.email,
+          otp: passwordOtp,
+          new_password: newPassword
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Password update failed');
+      setPasswordMessage('Password updated successfully. Please use the new password next time you sign in.');
+      setPasswordOtp('');
+      setNewPassword('');
+    } catch (err: any) {
+      setPasswordError(err.message || 'Password update failed');
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   const profileComplete = Boolean(profile?.full_name && profile?.branch && profile?.semester && profile?.roll_no);
@@ -425,13 +478,80 @@ const Profile = () => {
               <Icon icon={isEditing ? "solar:close-circle-bold" : "solar:pen-bold"} fontSize={18} />
               {isEditing ? 'Cancel' : 'Edit Profile'}
             </button>
-            <button onClick={handleResetPassword} className="px-6 py-3 bg-white border border-gray-200 text-gray-600 rounded-lg font-bold text-xs hover:bg-gray-50 transition-all uppercase tracking-widest flex items-center justify-center gap-2">
+            <button onClick={() => setShowSecurity((prev) => !prev)} className="px-6 py-3 bg-white border border-gray-200 text-gray-600 rounded-lg font-bold text-xs hover:bg-gray-50 transition-all uppercase tracking-widest flex items-center justify-center gap-2">
               <Icon icon="solar:lock-password-bold" fontSize={18} />
-              Security
+              {showSecurity ? 'Hide Security' : 'Security'}
             </button>
           </div>
         </div>
       </header>
+
+      {showSecurity && (
+        <div className="bg-white p-6 sm:p-10 rounded-xl border border-gray-200 shadow-sm space-y-5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+              <Icon icon="solar:shield-keyhole-bold" fontSize={20} className="text-indigo-400" />
+              Password & Security
+            </h2>
+            <button
+              onClick={handleSendPasswordOtp}
+              disabled={passwordLoading}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-indigo-700 transition-all disabled:opacity-60"
+            >
+              {passwordLoading ? 'Sending...' : 'Send OTP'}
+            </button>
+          </div>
+
+          {passwordError && (
+            <div className="p-3 bg-red-50 text-red-600 rounded-lg text-xs font-bold border border-red-100 flex items-center gap-2">
+              <Icon icon="solar:danger-bold" fontSize={18} /> {passwordError}
+            </div>
+          )}
+          {passwordMessage && (
+            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold border border-indigo-100 flex items-center gap-2">
+              <Icon icon="solar:info-circle-bold" fontSize={18} /> {passwordMessage}
+            </div>
+          )}
+
+          <form onSubmit={handleChangePassword} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className={labelClass}>Verification Code</label>
+              <div className="relative">
+                <Icon icon="solar:shield-keyhole-bold" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" fontSize={20} />
+                <input
+                  type="text"
+                  className={inputClass.replace('px-4', 'pl-11')}
+                  placeholder="123456"
+                  value={passwordOtp}
+                  onChange={(e) => setPasswordOtp(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className={labelClass}>New Password</label>
+              <div className="relative">
+                <Icon icon="solar:lock-password-bold" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" fontSize={20} />
+                <input
+                  type="password"
+                  className={inputClass.replace('px-4', 'pl-11')}
+                  placeholder="••••••••"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="md:col-span-2">
+              <button
+                type="submit"
+                disabled={passwordLoading}
+                className="w-full py-3 bg-[#212B36] text-white rounded-lg font-bold text-xs hover:bg-[#161C24] transition-all uppercase tracking-widest disabled:opacity-60"
+              >
+                {passwordLoading ? 'Updating...' : 'Update Password'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {isEditing ? (
         <form onSubmit={handleUpdate} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden animate-in slide-in-from-bottom-2 duration-300">

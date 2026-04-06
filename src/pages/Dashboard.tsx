@@ -188,7 +188,7 @@ const Dashboard = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-sm text-[#212B36] truncate">{u.full_name}</p>
-                    <p className="text-[11px] text-gray-400 font-bold">{u.points || 0} XP</p>
+                    <p className="text-[11px] text-gray-400 font-bold whitespace-nowrap">{u.points || 0} XP</p>
                   </div>
                   {i === 0 && <Icon icon="solar:star-bold" className="text-amber-400" fontSize={16} />}
                 </div>

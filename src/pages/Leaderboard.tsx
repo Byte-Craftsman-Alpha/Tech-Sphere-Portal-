@@ -103,7 +103,7 @@ const Leaderboard = () => {
                           {u.full_name || 'Unnamed User'}
                           {isMe && <span className="ml-2 text-[10px] font-black uppercase tracking-widest text-indigo-600">You</span>}
                         </p>
-                        <p className="text-[11px] text-gray-400 font-bold">{u.points || 0} XP</p>
+                        <p className="text-[11px] text-gray-400 font-bold whitespace-nowrap">{u.points || 0} XP</p>
                       </div>
                       {u.rank === 1 && <Icon icon="solar:star-bold" className="text-amber-400" fontSize={18} />}
                     </div>
@@ -137,7 +137,7 @@ const Leaderboard = () => {
                 </div>
                 <div>
                   <p className="text-sm font-bold text-[#212B36]">{me.full_name || 'Your Account'}</p>
-                  <p className="text-[11px] font-bold text-gray-400">{me.points || 0} XP</p>
+                  <p className="text-[11px] font-bold text-gray-400 whitespace-nowrap">{me.points || 0} XP</p>
                 </div>
               </div>
             ) : (
