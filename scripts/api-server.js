@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = 3000;
-const API_DIR = path.join(__dirname, '..', 'api');
+const API_DIR = path.join(__dirname, '..', 'api_handlers');
 const SQL_PATH = path.join(__dirname, '..', 'full_db_setup.sql');
 const REQUIRED_TABLE = 'ts_v2025_profiles';
 const REQUIRED_COLUMNS = [
