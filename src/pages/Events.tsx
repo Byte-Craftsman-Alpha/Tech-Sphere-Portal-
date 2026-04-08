@@ -561,7 +561,7 @@ const Events = () => {
             <span className="font-bold text-sm text-indigo-600 uppercase tracking-widest">TechSphere Pass</span>
             <div ref={passRef} className="relative aspect-[3/4] w-full bg-[#161C24] rounded-2xl overflow-hidden shadow-2xl border border-gray-800">
               {selectedEvent.pass_settings?.bg_image && (
-                <img src={selectedEvent.pass_settings.bg_image} className="absolute inset-0 w-full h-full object-cover opacity-60" crossOrigin="anonymous" />
+                <img src={selectedEvent.pass_settings.bg_image} className="absolute inset-0 w-full h-full object-cover opacity-60" />
               )}
               <div className="relative z-10 w-full h-full flex flex-col items-center justify-between p-8 text-white">
                 <div className="text-center">
