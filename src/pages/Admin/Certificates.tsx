@@ -19,6 +19,7 @@ const AdminCertificates = () => {
   const [form, setForm] = useState({ ...defaultForm });
   const [items, setItems] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
+  const [profiles, setProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -28,11 +29,16 @@ const AdminCertificates = () => {
   const [editForm, setEditForm] = useState({ ...defaultForm });
   const [editSaving, setEditSaving] = useState(false);
   const [qrItem, setQrItem] = useState<any | null>(null);
+  const [customType, setCustomType] = useState('');
+  const [editCustomType, setEditCustomType] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [editUserId, setEditUserId] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchCertificates();
     fetchEvents();
+    fetchProfiles();
   }, []);
 
   const fetchCertificates = async () => {
@@ -67,6 +73,20 @@ const AdminCertificates = () => {
     }
   };
 
+  const fetchProfiles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ts_v2025_profiles')
+        .select('id, full_name, email')
+        .order('full_name', { ascending: true })
+        .limit(500);
+      if (error) throw error;
+      setProfiles(data || []);
+    } catch (err: any) {
+      console.error('Failed to load users:', err.message);
+    }
+  };
+
   const updateForm = (field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
   };
@@ -95,6 +115,18 @@ const AdminCertificates = () => {
     }));
   };
 
+  const handleUserPick = (userId: string) => {
+    setSelectedUserId(userId);
+    if (!userId) return;
+    const selected = profiles.find(p => p.id === userId);
+    if (!selected) return;
+    setForm(prev => ({
+      ...prev,
+      holder_name: selected.full_name || prev.holder_name,
+      holder_email: selected.email || prev.holder_email
+    }));
+  };
+
   const handleEditEventPick = (eventId: string) => {
     if (!eventId) {
       setEditForm(prev => ({ ...prev, event_id: '' }));
@@ -106,6 +138,18 @@ const AdminCertificates = () => {
       ...prev,
       event_id: selected.id,
       event_name: selected.title || prev.event_name
+    }));
+  };
+
+  const handleEditUserPick = (userId: string) => {
+    setEditUserId(userId);
+    if (!userId) return;
+    const selected = profiles.find(p => p.id === userId);
+    if (!selected) return;
+    setEditForm(prev => ({
+      ...prev,
+      holder_name: selected.full_name || prev.holder_name,
+      holder_email: selected.email || prev.holder_email
     }));
   };
 
@@ -200,19 +244,28 @@ const AdminCertificates = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Session expired');
 
+      const payload = {
+        ...form,
+        certificate_type: form.certificate_type === 'Custom'
+          ? (customType.trim() || 'Custom')
+          : form.certificate_type
+      };
+
       const res = await fetch('/api/admin-certificates', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify(form)
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create certificate');
 
       setMessage('Certificate added successfully.');
       setForm({ ...defaultForm });
+      setCustomType('');
+      setSelectedUserId('');
       setItems(prev => [data.certificate, ...prev]);
     } catch (err: any) {
       setMessage(err.message || 'Failed to create certificate');
@@ -222,11 +275,15 @@ const AdminCertificates = () => {
   };
 
   const openEdit = (cert: any) => {
+    const isCustom = !['Participation', 'Winner', 'Runner Up', 'Speaker', 'Volunteer'].includes(cert.certificate_type || '');
+    setEditCustomType(isCustom ? (cert.certificate_type || '') : '');
+    const matchedUserId = cert.user_id || profiles.find(p => p.email && cert.holder_email && p.email.toLowerCase() === cert.holder_email.toLowerCase())?.id || '';
+    setEditUserId(matchedUserId);
     setEditing(cert);
     setEditForm({
       holder_name: cert.holder_name || '',
       event_name: cert.event_name || '',
-      certificate_type: cert.certificate_type || 'Participation',
+      certificate_type: isCustom ? 'Custom' : (cert.certificate_type || 'Participation'),
       credential: cert.credential || '',
       holder_email: cert.holder_email || '',
       event_id: cert.event_id || ''
@@ -244,18 +301,25 @@ const AdminCertificates = () => {
       setEditSaving(true);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Session expired');
+      const updatePayload = {
+        ...editForm,
+        certificate_type: editForm.certificate_type === 'Custom'
+          ? (editCustomType.trim() || 'Custom')
+          : editForm.certificate_type
+      };
       const res = await fetch('/api/admin-certificates', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ id: editing.id, updates: editForm })
+        body: JSON.stringify({ id: editing.id, updates: updatePayload })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update certificate');
       setItems(prev => prev.map(item => item.id === editing.id ? data.certificate : item));
       setEditing(null);
+      setEditUserId('');
     } catch (err: any) {
       setMessage(err.message || 'Failed to update certificate');
     } finally {
@@ -351,6 +415,22 @@ const AdminCertificates = () => {
             />
           </div>
           <div className="space-y-2">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Select Existing User (optional)</label>
+            <select
+              value={selectedUserId}
+              onChange={(e) => handleUserPick(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-200"
+            >
+              <option value="">Choose user</option>
+              {profiles.map((profile) => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.full_name || 'Unnamed'} ({profile.email || 'no-email'})
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-gray-400 font-medium">Selecting a user will autofill name and email.</p>
+          </div>
+          <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Link Existing Event (optional)</label>
             <select
               value={form.event_id}
@@ -386,8 +466,20 @@ const AdminCertificates = () => {
               <option value="Runner Up">Runner Up</option>
               <option value="Speaker">Speaker</option>
               <option value="Volunteer">Volunteer</option>
+              <option value="Custom">Custom</option>
             </select>
           </div>
+          {form.certificate_type === 'Custom' && (
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Custom Certificate Type *</label>
+              <input
+                value={customType}
+                onChange={(e) => setCustomType(e.target.value)}
+                placeholder="e.g., Best Innovator"
+                className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-200"
+              />
+            </div>
+          )}
           <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Credential ID *</label>
             <div className="flex gap-2">
@@ -573,6 +665,22 @@ const AdminCertificates = () => {
                   />
                 </div>
                 <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Select Existing User (optional)</label>
+                  <select
+                    value={editUserId}
+                    onChange={(e) => handleEditUserPick(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-200"
+                  >
+                    <option value="">Choose user</option>
+                    {profiles.map((profile) => (
+                      <option key={profile.id} value={profile.id}>
+                        {profile.full_name || 'Unnamed'} ({profile.email || 'no-email'})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] text-gray-400 font-medium">Selecting a user will autofill name and email.</p>
+                </div>
+                <div className="space-y-2">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Link Existing Event (optional)</label>
                   <select
                     value={editForm.event_id}
@@ -607,8 +715,20 @@ const AdminCertificates = () => {
                     <option value="Runner Up">Runner Up</option>
                     <option value="Speaker">Speaker</option>
                     <option value="Volunteer">Volunteer</option>
+                    <option value="Custom">Custom</option>
                   </select>
                 </div>
+                {editForm.certificate_type === 'Custom' && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Custom Certificate Type *</label>
+                    <input
+                      value={editCustomType}
+                      onChange={(e) => setEditCustomType(e.target.value)}
+                      placeholder="e.g., Best Innovator"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-200"
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Credential ID *</label>
                   <input

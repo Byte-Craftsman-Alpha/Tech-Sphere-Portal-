@@ -23,6 +23,7 @@ import AdminUsers from './pages/Admin/Users';
 import AdminTeams from './pages/Admin/Teams';
 import AdminCertificates from './pages/Admin/Certificates';
 import AdminCertificatePrint from './pages/Admin/CertificatePrint';
+import AdminPasses from './pages/Admin/Passes';
 
 handleGoogleRedirect();
 
@@ -133,6 +134,7 @@ const App = () => {
     if (path.startsWith('/admin/teams')) return '/admin/teams';
     if (path.startsWith('/admin/certificates/print')) return '/admin/certificates';
     if (path.startsWith('/admin/certificates')) return '/admin/certificates';
+    if (path.startsWith('/admin/passes')) return '/admin/passes';
     return '/home';
   };
 
@@ -236,6 +238,7 @@ const App = () => {
 
   const adminItems = isAdmin ? [
     { label: 'Events Mgr', icon: 'solar:settings-minimalistic-bold', path: '/admin/events' },
+    { label: 'Pass Studio', icon: 'solar:ticket-bold', path: '/admin/passes' },
     { label: 'Challenges Mgr', icon: 'solar:cup-bold', path: '/admin/challenges' },
     { label: 'Users Mgr', icon: 'solar:users-group-rounded-bold', path: '/admin/users' },
     { label: 'Teams Mgr', icon: 'solar:users-group-rounded-bold', path: '/admin/teams' },
@@ -384,6 +387,7 @@ const App = () => {
                   <Route path="/admin/teams" element={<PageTransition><AdminTeams /></PageTransition>} />
                   <Route path="/admin/certificates" element={<PageTransition><AdminCertificates /></PageTransition>} />
                   <Route path="/admin/certificates/print/:id" element={<PageTransition><AdminCertificatePrint /></PageTransition>} />
+                  <Route path="/admin/passes" element={<PageTransition><AdminPasses /></PageTransition>} />
                   <Route path="*" element={<PageTransition><Dashboard /></PageTransition>} />
                 </Routes>
               )}
