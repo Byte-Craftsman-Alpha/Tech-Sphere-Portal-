@@ -29,8 +29,26 @@ model Profile {
 
   registrations Registration[]
   submissions   Submission[]
+  certificates  Certificate[]
 
   @@map("ts_v2025_profiles")
+}
+
+model Certificate {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  holder_name      String
+  event_name       String
+  event_id         String?  @db.Uuid
+  certificate_type String
+  credential       String   @unique
+  holder_email     String?
+  user_id          String?  @db.Uuid
+  created_at       DateTime @default(now()) @db.Timestamptz()
+
+  event   Event?   @relation(fields: [event_id], references: [id], onDelete: SetNull)
+  profile Profile? @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@map("ts_v2025_certificates")
 }
 
 model Event {

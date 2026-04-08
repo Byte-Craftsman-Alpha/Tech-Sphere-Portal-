@@ -241,11 +241,36 @@ const Events = () => {
     return next;
   };
 
+  const getMissingProfileFields = (event: any, snapshot: any) => {
+    return (event.custom_form || []).filter((field: any) => {
+      if (field.type !== 'profile_field') return false;
+      if (!field.required) return false;
+      const key = field.profile_key;
+      if (!key) return false;
+      const value = snapshot?.[key];
+      return value === null || value === undefined || String(value).trim() === '';
+    });
+  };
+
+  const handleMissingProfileFields = (missing: any[]) => {
+    if (missing.length === 0) return false;
+    const errors: any = {};
+    missing.forEach((field) => {
+      errors[field.id] = `Update your profile: ${field.label || field.profile_key || 'Required field'}`;
+    });
+    setFormErrors(errors);
+    alert(`Please update your profile before registering: ${missing.map((f) => f.label || f.profile_key).join(', ')}`);
+    return true;
+  };
+
   const handleRegister = async (event: any) => {
     const isClosed = (event.pass_settings?.is_open ?? event.is_open) === false;
     if (isClosed) return;
     if (loading && !showForm) return;
     if (event.custom_form?.length > 0 && !showForm) {
+      const profileSnapshot = (profileInfo || await getProfileSnapshot());
+      const missing = getMissingProfileFields(event, profileSnapshot);
+      if (handleMissingProfileFields(missing)) return;
       const existing = getPass(event.id);
       setShowForm(event);
       setFormResponses(hydrateDefaults(event, existing?.form_responses || {}));
@@ -256,6 +281,8 @@ const Events = () => {
     let finalResponses = formResponses;
     if (showForm) {
       const profileSnapshot = (profileInfo || await getProfileSnapshot());
+      const missing = getMissingProfileFields(showForm, profileSnapshot);
+      if (handleMissingProfileFields(missing)) return;
       const lockedResponses = applyProfileOverrides(showForm, formResponses, profileSnapshot);
       setFormResponses(lockedResponses);
       if (!(await validateForm(showForm, lockedResponses))) return;

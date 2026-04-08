@@ -275,6 +275,24 @@ FOR DELETE USING (
 );
 
 -- ----------------------------------------------------------------
+-- 6d. CERTIFICATES (Public verification)
+-- ----------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS ts_v2025_certificates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  holder_name TEXT NOT NULL,
+  event_name TEXT NOT NULL,
+  event_id UUID REFERENCES ts_v2025_events(id) ON DELETE SET NULL,
+  certificate_type TEXT NOT NULL,
+  credential TEXT NOT NULL UNIQUE,
+  holder_email TEXT,
+  user_id UUID REFERENCES ts_v2025_profiles(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS ts_v2025_certificates_created_at_idx
+  ON ts_v2025_certificates(created_at DESC);
+
+-- ----------------------------------------------------------------
 -- 7. SAFE COLUMN BACKFILL (FOR EXISTING DATABASES)
 -- ----------------------------------------------------------------
 ALTER TABLE ts_v2025_profiles ADD COLUMN IF NOT EXISTS instagram TEXT;
@@ -295,3 +313,7 @@ ALTER TABLE ts_v2025_teams ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAU
 ALTER TABLE ts_v2025_team_members ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'member';
 ALTER TABLE ts_v2025_team_members ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
 ALTER TABLE ts_v2025_team_members ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE ts_v2025_certificates ADD COLUMN IF NOT EXISTS holder_email TEXT;
+ALTER TABLE ts_v2025_certificates ADD COLUMN IF NOT EXISTS event_id UUID;
+ALTER TABLE ts_v2025_certificates ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE ts_v2025_certificates ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();

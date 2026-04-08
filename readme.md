@@ -82,6 +82,9 @@ The project is configured for deployment on Vercel.
 2. Run `vercel` to deploy.
 3. Ensure all environment variables from `.env` are added to your Vercel project settings.
 
+#### Serverless Function Count
+This project uses a single Vercel serverless entrypoint at `api/index.js`. All files in `api_handlers/` are imported modules used by that one entrypoint and do not create additional serverless functions, so the function count stays fixed.
+
 ## Environment Variables
 
 | Variable | Description |
@@ -94,5 +97,4 @@ The project is configured for deployment on Vercel.
 | `ADMIN_PASSWORD` | Password for the default admin account created by setup |
 | `VITE_GOOGLE_CLIENT_ID` | Google OAuth Client ID |
 | `DEV_MODE` | Set to "true" to log OTPs in development mode |
-
 

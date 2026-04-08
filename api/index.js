@@ -1,9 +1,11 @@
 import { parse } from 'url';
 import adminApproveUser from '../api_handlers/admin-approve-user.js';
+import adminCertificates from '../api_handlers/admin-certificates.js';
 import adminCreateUser from '../api_handlers/admin-create-user.js';
 import adminResetPassword from '../api_handlers/admin-reset-password.js';
 import adminSendUserDetails from '../api_handlers/admin-send-user-details.js';
 import adminUpdateProfile from '../api_handlers/admin-update-profile.js';
+import certificateVerify from '../api_handlers/certificate-verify.js';
 import changePasswordWithOtp from '../api_handlers/change-password-with-otp.js';
 import cleanupUnapproved from '../api_handlers/cleanup-unapproved.js';
 import deleteUser from '../api_handlers/delete-user.js';
@@ -17,10 +19,12 @@ import verifyOtp from '../api_handlers/verify-otp.js';
 
 const routes = {
   '/admin-approve-user': adminApproveUser,
+  '/admin-certificates': adminCertificates,
   '/admin-create-user': adminCreateUser,
   '/admin-reset-password': adminResetPassword,
   '/admin-send-user-details': adminSendUserDetails,
   '/admin-update-profile': adminUpdateProfile,
+  '/certificate-verify': certificateVerify,
   '/change-password-with-otp': changePasswordWithOtp,
   '/cleanup-unapproved': cleanupUnapproved,
   '/delete-user': deleteUser,

@@ -16,10 +16,13 @@ import Challenges from './pages/Challenges';
 import Profile from './pages/Profile';
 import Leaderboard from './pages/Leaderboard';
 import PublicRegistrations from './pages/PublicRegistrations';
+import CertificateVerify from './pages/CertificateVerify';
 import AdminEvents from './pages/Admin/Events';
 import AdminChallenges from './pages/Admin/Challenges';
 import AdminUsers from './pages/Admin/Users';
 import AdminTeams from './pages/Admin/Teams';
+import AdminCertificates from './pages/Admin/Certificates';
+import AdminCertificatePrint from './pages/Admin/CertificatePrint';
 
 handleGoogleRedirect();
 
@@ -128,12 +131,15 @@ const App = () => {
     if (path.startsWith('/admin/challenges')) return '/admin/challenges';
     if (path.startsWith('/admin/users')) return '/admin/users';
     if (path.startsWith('/admin/teams')) return '/admin/teams';
+    if (path.startsWith('/admin/certificates/print')) return '/admin/certificates';
+    if (path.startsWith('/admin/certificates')) return '/admin/certificates';
     return '/home';
   };
 
   const activeTab = getActiveTab();
   const isAuthPage = ['/', '/login', '/register'].includes(location.pathname);
   const isPublicShare = location.pathname.startsWith('/share/');
+  const isPublicCert = location.pathname.startsWith('/certificates/verify');
   const profileComplete = Boolean(
     profile?.full_name &&
     profile?.branch &&
@@ -179,7 +185,7 @@ const App = () => {
     );
   }
 
-  if ((isAuthPage || isPublicShare) && !session) {
+  if ((isAuthPage || isPublicShare || isPublicCert) && !session) {
     return (
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
@@ -187,6 +193,7 @@ const App = () => {
           <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
           <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
           <Route path="/share/:token" element={<PageTransition><PublicRegistrations /></PageTransition>} />
+          <Route path="/certificates/verify" element={<PageTransition><CertificateVerify /></PageTransition>} />
         </Routes>
       </AnimatePresence>
     );
@@ -232,6 +239,7 @@ const App = () => {
     { label: 'Challenges Mgr', icon: 'solar:cup-bold', path: '/admin/challenges' },
     { label: 'Users Mgr', icon: 'solar:users-group-rounded-bold', path: '/admin/users' },
     { label: 'Teams Mgr', icon: 'solar:users-group-rounded-bold', path: '/admin/teams' },
+    { label: 'Certificates', icon: 'solar:diploma-verified-bold', path: '/admin/certificates' },
   ] : [];
 
   const getIcon = (icon: string, active: boolean) => {
@@ -369,10 +377,13 @@ const App = () => {
                   <Route path="/leaderboard" element={<PageTransition><Leaderboard /></PageTransition>} />
                   <Route path="/profile" element={<PageTransition><Profile /></PageTransition>} />
                   <Route path="/share/:token" element={<PageTransition><PublicRegistrations /></PageTransition>} />
+                  <Route path="/certificates/verify" element={<PageTransition><CertificateVerify /></PageTransition>} />
                   <Route path="/admin/events" element={<PageTransition><AdminEvents /></PageTransition>} />
                   <Route path="/admin/challenges" element={<PageTransition><AdminChallenges /></PageTransition>} />
                   <Route path="/admin/users" element={<PageTransition><AdminUsers /></PageTransition>} />
                   <Route path="/admin/teams" element={<PageTransition><AdminTeams /></PageTransition>} />
+                  <Route path="/admin/certificates" element={<PageTransition><AdminCertificates /></PageTransition>} />
+                  <Route path="/admin/certificates/print/:id" element={<PageTransition><AdminCertificatePrint /></PageTransition>} />
                   <Route path="*" element={<PageTransition><Dashboard /></PageTransition>} />
                 </Routes>
               )}
