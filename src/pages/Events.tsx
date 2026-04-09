@@ -579,7 +579,7 @@ const Events = () => {
                   <QRCodeSVG value={selectedEvent.pass?.qr_data || 'techsphere'} size={256} className="w-full h-full" />
                 </div>
                 <div className="w-full border-t border-white/10 pt-4 text-left">
-                  <p className="text-[7px] font-bold text-gray-400 uppercase tracking-widest">Technosphere Member</p>
+                  <p className="text-[7px] font-bold text-gray-400 uppercase tracking-widest">TechSphere Member</p>
                   <p className="text-[9px] font-mono opacity-60">ID: #{String(selectedEvent.pass?.id || '').slice(0, 8).toUpperCase()}</p>
                 </div>
               </div>
