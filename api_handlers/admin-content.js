@@ -168,12 +168,14 @@ export default async function handler(req, res) {
 
     if (req.method === 'DELETE') {
       const { id } = req.body || {};
-      if (!id) return res.status(400).json({ error: 'id is required' });
+      const queryId = String(req.query?.id || '').trim();
+      const itemId = String(id || queryId || '').trim();
+      if (!itemId) return res.status(400).json({ error: 'id is required' });
 
       const { error } = await supabase
         .from('ts_v2025_content_items')
         .delete()
-        .eq('id', id);
+        .eq('id', itemId);
 
       if (error) throw error;
       return res.status(200).json({ success: true });

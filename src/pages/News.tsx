@@ -100,14 +100,14 @@ const News = () => {
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.16),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(6,182,212,0.12),_transparent_28%),linear-gradient(135deg,_rgba(255,255,255,0.98),_rgba(248,250,252,0.95))]" />
         <div className="relative p-6 md:p-8 lg:p-10">
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-            <div className="max-w-2xl space-y-4">
+          <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6 xl:gap-8">
+            <div className="max-w-2xl xl:max-w-3xl space-y-4">
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-100 bg-cyan-50 text-cyan-700 text-[10px] font-bold uppercase tracking-[0.28em]">
                 <Icon icon="solar:square-top-down-bold" fontSize={14} />
                 News hub
               </span>
               <div className="space-y-3">
-                <h1 className="text-3xl md:text-5xl font-black tracking-tight text-[#1A2230]">
+                <h1 className="text-3xl md:text-5xl xl:text-[3.35rem] font-black tracking-tight text-[#1A2230] max-w-3xl">
                   News, notices, reports, articles, and blogs in one calm feed.
                 </h1>
                 <p className="text-sm md:text-base text-gray-500 leading-7 max-w-2xl">
@@ -117,18 +117,20 @@ const News = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <div className="min-w-24 rounded-2xl border border-gray-100 bg-white/80 p-4 shadow-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-3 gap-3 w-full xl:min-w-[36rem] xl:max-w-[38rem] xl:flex-none">
+              <div className="min-w-0 rounded-2xl border border-gray-100 bg-white/80 p-4 shadow-sm">
                 <div className="text-[10px] uppercase tracking-[0.28em] text-gray-400 font-bold">Total</div>
-                <div className="mt-2 text-2xl font-black text-[#1A2230]">{items.length}</div>
+                <div className="mt-2 text-2xl md:text-[2rem] font-black text-[#1A2230] leading-none">{items.length}</div>
               </div>
-              <div className="min-w-24 rounded-2xl border border-gray-100 bg-white/80 p-4 shadow-sm">
+              <div className="min-w-0 rounded-2xl border border-gray-100 bg-white/80 p-4 shadow-sm">
                 <div className="text-[10px] uppercase tracking-[0.28em] text-gray-400 font-bold">Featured</div>
-                <div className="mt-2 text-2xl font-black text-[#1A2230]">{featuredItems.length}</div>
+                <div className="mt-2 text-2xl md:text-[2rem] font-black text-[#1A2230] leading-none">{featuredItems.length}</div>
               </div>
-              <div className="min-w-24 rounded-2xl border border-gray-100 bg-white/80 p-4 shadow-sm">
+              <div className="min-w-0 rounded-2xl border border-gray-100 bg-white/80 p-4 shadow-sm">
                 <div className="text-[10px] uppercase tracking-[0.28em] text-gray-400 font-bold">Live</div>
-                <div className="mt-2 text-2xl font-black text-[#1A2230]">{selectedCategory === 'all' ? 'All' : getCategoryMeta(selectedCategory).label}</div>
+                <div className="mt-2 text-lg md:text-xl font-black text-[#1A2230] leading-tight break-words">
+                  {selectedCategory === 'all' ? 'All updates' : getCategoryMeta(selectedCategory).label}
+                </div>
               </div>
             </div>
           </div>

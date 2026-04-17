@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Icon } from '@iconify/react';
 import supabase from '../../lib/supabase';
@@ -193,13 +194,11 @@ const AdminContent = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Please sign in again to manage content.');
 
-      const res = await fetch('/api/admin-content', {
+      const res = await fetch(`/api/admin-content?id=${encodeURIComponent(item.id)}`, {
         method: 'DELETE',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({ id: item.id })
+        }
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to delete content');
@@ -387,24 +386,28 @@ const AdminContent = () => {
 
                 <div className="flex flex-wrap items-center gap-2">
                   <button
+                    type="button"
                     onClick={() => copyLink(item.external_url)}
                     className="rounded-full border border-gray-100 bg-white px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-gray-600 transition-colors hover:bg-gray-50"
                   >
                     Copy link
                   </button>
                   <button
+                    type="button"
                     onClick={() => togglePublished(item, !item.published)}
                     className="rounded-full border border-gray-100 bg-white px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-gray-600 transition-colors hover:bg-gray-50"
                   >
                     {item.published ? 'Unpublish' : 'Publish'}
                   </button>
                   <button
+                    type="button"
                     onClick={() => openEdit(item)}
                     className="rounded-full border border-indigo-100 bg-indigo-50 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-indigo-700 transition-colors hover:bg-indigo-100"
                   >
                     Edit
                   </button>
                   <button
+                    type="button"
                     onClick={() => removeItem(item)}
                     className="rounded-full border border-red-100 bg-red-50 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-red-600 transition-colors hover:bg-red-100"
                   >
@@ -430,7 +433,7 @@ const AdminContent = () => {
         </div>
       )}
 
-      {modalOpen && (
+      {modalOpen && createPortal(
         <div className="fixed inset-0 z-[120] overflow-y-auto bg-[#111827]/70 p-4 backdrop-blur-sm">
           <div className="mx-auto my-10 w-full max-w-4xl rounded-3xl border border-white/10 bg-white shadow-2xl">
             <form onSubmit={saveItem} className="space-y-8 p-6 md:p-8">
@@ -578,7 +581,8 @@ const AdminContent = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
