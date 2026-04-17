@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import { QRCodeSVG } from 'qrcode.react';
 import { toPng } from 'html-to-image';
@@ -403,7 +404,7 @@ const Challenges = () => {
         )}
       </div>
 
-      {showForm && (
+      {showForm && createPortal(
         <div className="fixed inset-0 bg-[#212B36]/60 backdrop-blur-sm z-[110] flex justify-center items-center p-4">
           <div className="bg-white w-full max-w-lg rounded-xl p-8 relative">
             <button onClick={() => setShowForm(null)} className="absolute top-4 right-4 text-gray-400"><Icon icon="solar:close-circle-bold" fontSize={24} /></button>
@@ -524,10 +525,11 @@ const Challenges = () => {
               <button onClick={() => handleRegister(showForm)} className="w-full py-4 bg-indigo-600 text-white rounded-lg font-bold">Submit Entry</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {selectedChallenge && (
+      {selectedChallenge && createPortal(
         <div className="fixed inset-0 bg-[#212B36]/80 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-sm rounded-xl p-8 text-center space-y-6 relative animate-in zoom-in-95 duration-200">
              <button onClick={() => setSelectedChallenge(null)} className="absolute top-4 right-4 text-gray-400 font-sans"><Icon icon="solar:close-circle-bold" fontSize={24} /></button>
@@ -561,7 +563,8 @@ const Challenges = () => {
                <Icon icon="solar:download-bold" /> Download Pass
              </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

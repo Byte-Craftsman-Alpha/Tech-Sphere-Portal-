@@ -1,4 +1,5 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { FormEvent } from 'react';
 import { Icon } from '@iconify/react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -596,7 +597,7 @@ const AdminCertificates = () => {
         )}
       </section>
 
-      {qrItem && (
+      {qrItem && createPortal(
         <div className="fixed inset-0 bg-[#212B36]/60 backdrop-blur-sm z-[100] p-4 flex items-center justify-center">
           <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-6 space-y-5">
             <div className="flex items-center justify-between">
@@ -634,10 +635,11 @@ const AdminCertificates = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {editing && (
+      {editing && createPortal(
         <div className="fixed inset-0 bg-[#212B36]/60 backdrop-blur-sm z-[100] p-4 flex items-center justify-center">
           <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl p-6 sm:p-8">
             <form onSubmit={handleUpdate} className="space-y-6">
@@ -765,7 +767,8 @@ const AdminCertificates = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -509,7 +509,7 @@ const AdminChallenges = () => {
         ))}
       </div>
 
-      {isModalOpen && (
+      {isModalOpen && createPortal(
         <div className="fixed inset-0 bg-[#212B36]/60 backdrop-blur-sm z-[100] overflow-y-auto p-4 flex justify-center">
           <div className="bg-white w-full max-w-5xl rounded-xl shadow-2xl h-fit my-auto relative overflow-hidden">
             <form onSubmit={handleSubmit} className="p-6 sm:p-10 space-y-8">
@@ -735,7 +735,8 @@ const AdminChallenges = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {showTracking && currentChallenge && (

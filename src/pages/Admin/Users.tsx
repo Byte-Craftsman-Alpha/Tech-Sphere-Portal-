@@ -648,7 +648,7 @@ const AdminUsers = () => {
         )}
       </div>
 
-      {selectedUser && (
+      {selectedUser && createPortal(
         <div className="fixed inset-0 bg-[#212B36]/60 backdrop-blur-sm z-[100] overflow-y-auto p-4 flex justify-center">
           <div className="bg-white w-full max-w-lg rounded-xl shadow-2xl h-fit my-auto relative overflow-hidden">
             <form onSubmit={handleUpdateUser} className="p-6 sm:p-8 space-y-6">
@@ -717,10 +717,11 @@ const AdminUsers = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {isCreateModalOpen && (
+      {isCreateModalOpen && createPortal(
         <div className="fixed inset-0 bg-[#212B36]/60 backdrop-blur-sm z-[100] overflow-y-auto p-4 flex justify-center">
           <div className="bg-white w-full max-w-2xl rounded-xl shadow-2xl h-fit my-auto relative overflow-hidden">
             <div className="p-6 border-b border-gray-100 flex items-center justify-between">
@@ -948,7 +949,8 @@ const AdminUsers = () => {
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {toast && (
