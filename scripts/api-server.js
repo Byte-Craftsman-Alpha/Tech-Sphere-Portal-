@@ -284,7 +284,7 @@ const server = http.createServer(async (req, res) => {
 
       // 1. Process Body (only for non-safe methods)
       let bodyData = {};
-      if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
         const rawBody = await new Promise((resolve) => {
           let chunks = '';
           req.on('data', chunk => { chunks += chunk.toString(); });

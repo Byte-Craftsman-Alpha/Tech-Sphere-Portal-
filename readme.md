@@ -60,6 +60,19 @@ This command will:
 4. Establish database triggers.
 5. Create your default Admin user.
 
+### Incremental Migration for Existing Databases
+
+If your database is already live, use the additive migration for the new content hub instead of re-running the full setup:
+
+```sql
+scripts/migrations/2026-04-17_add_content_hub.sql
+```
+
+This migration only:
+1. Creates the `ts_v2025_content_items` table.
+2. Adds indexes and RLS policies for admin-only writes.
+3. Leaves all existing tables and rows unchanged.
+
 ### Running Locally (Full-Stack)
 
 To run both the Vite frontend and local Node.js API server simultaneously, use the full-stack command:
@@ -96,5 +109,5 @@ This project uses a single Vercel serverless entrypoint at `api/index.js`. All f
 | `ADMIN_EMAIL` | Email for the default admin account created by setup |
 | `ADMIN_PASSWORD` | Password for the default admin account created by setup |
 | `VITE_GOOGLE_CLIENT_ID` | Google OAuth Client ID |
+| `VITE_PUBLIC_APP_URL` | Public URL used by client-side OAuth redirects |
 | `DEV_MODE` | Set to "true" to log OTPs in development mode |
-

@@ -46,6 +46,25 @@ CREATE TABLE IF NOT EXISTS ts_v2025_events (
 );
 
 -- ----------------------------------------------------------------
+-- 2b. CONTENT ITEMS TABLE (News, Announcements, Notices, Blogs)
+-- ----------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS ts_v2025_content_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  summary TEXT,
+  category TEXT NOT NULL,
+  external_url TEXT NOT NULL,
+  source TEXT,
+  image_url TEXT,
+  published BOOLEAN DEFAULT true,
+  featured BOOLEAN DEFAULT false,
+  sort_order INTEGER DEFAULT 0,
+  published_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ----------------------------------------------------------------
 -- 3. REGISTRATIONS TABLE (Entry Passes)
 -- ----------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS ts_v2025_registrations (
@@ -120,6 +139,30 @@ FOR UPDATE USING (
   EXISTS (SELECT 1 FROM ts_v2025_profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
 );
 CREATE POLICY "Admins can delete events" ON ts_v2025_events
+FOR DELETE USING (
+  EXISTS (SELECT 1 FROM ts_v2025_profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+);
+
+-- Content Hub: Public can read published items, admins manage everything
+ALTER TABLE ts_v2025_content_items ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Content items are viewable by everyone" ON ts_v2025_content_items;
+CREATE POLICY "Content items are viewable by everyone" ON ts_v2025_content_items
+FOR SELECT USING (
+  published = true OR EXISTS (SELECT 1 FROM ts_v2025_profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+);
+
+DROP POLICY IF EXISTS "Admins can manage content items" ON ts_v2025_content_items;
+DROP POLICY IF EXISTS "Admins can update content items" ON ts_v2025_content_items;
+DROP POLICY IF EXISTS "Admins can delete content items" ON ts_v2025_content_items;
+CREATE POLICY "Admins can manage content items" ON ts_v2025_content_items
+FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM ts_v2025_profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+);
+CREATE POLICY "Admins can update content items" ON ts_v2025_content_items
+FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM ts_v2025_profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+);
+CREATE POLICY "Admins can delete content items" ON ts_v2025_content_items
 FOR DELETE USING (
   EXISTS (SELECT 1 FROM ts_v2025_profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
 );
@@ -303,6 +346,15 @@ ALTER TABLE ts_v2025_events ADD COLUMN IF NOT EXISTS registration_link TEXT;
 ALTER TABLE ts_v2025_events ADD COLUMN IF NOT EXISTS is_open BOOLEAN DEFAULT true;
 ALTER TABLE ts_v2025_events ADD COLUMN IF NOT EXISTS has_passes BOOLEAN DEFAULT false;
 ALTER TABLE ts_v2025_events ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE ts_v2025_content_items ADD COLUMN IF NOT EXISTS summary TEXT;
+ALTER TABLE ts_v2025_content_items ADD COLUMN IF NOT EXISTS source TEXT;
+ALTER TABLE ts_v2025_content_items ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE ts_v2025_content_items ADD COLUMN IF NOT EXISTS published BOOLEAN DEFAULT true;
+ALTER TABLE ts_v2025_content_items ADD COLUMN IF NOT EXISTS featured BOOLEAN DEFAULT false;
+ALTER TABLE ts_v2025_content_items ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;
+ALTER TABLE ts_v2025_content_items ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ;
+ALTER TABLE ts_v2025_content_items ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE ts_v2025_content_items ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE ts_v2025_registrations ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE ts_v2025_registrations ADD COLUMN IF NOT EXISTS attended BOOLEAN DEFAULT false;
 ALTER TABLE ts_v2025_registrations ADD COLUMN IF NOT EXISTS attended_at TIMESTAMPTZ;

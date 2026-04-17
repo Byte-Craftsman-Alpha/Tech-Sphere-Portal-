@@ -1,10 +1,16 @@
 import supabase from './supabase';
 
+const getAuthRedirectUrl = () => {
+  const publicAppUrl = import.meta.env.VITE_PUBLIC_APP_URL;
+  const baseUrl = String(publicAppUrl || window.location.origin).replace(/\/$/, '');
+  return `${baseUrl}/login`;
+};
+
 export async function signInWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/login`
+      redirectTo: getAuthRedirectUrl()
     }
   });
 
