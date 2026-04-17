@@ -8,8 +8,8 @@ const Landing = () => {
       <header className="fixed top-0 w-full bg-white/80 backdrop-blur-md z-50 border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <Icon icon="solar:code-bold" className="text-white" fontSize={20} />
+            <div className="w-8 h-8 bg-transparent rounded-lg flex items-center justify-center">
+              <img src="/favicon.svg" alt="favicon" className="text-white" width="32" height="32" />
             </div>
             <span className="text-xl font-bold tracking-tight">TechSphere</span>
           </div>
@@ -72,8 +72,8 @@ const Landing = () => {
       <footer className="py-12 bg-white px-6 border-t border-gray-100">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <Icon icon="solar:code-bold" className="text-white" fontSize={18} />
+            <div className="w-8 h-8 bg-transparent rounded-lg flex items-center justify-center">
+              <img src="/favicon.svg" alt="favicon" className="text-white" width="24" height="24" />
             </div>
             <span className="text-lg font-bold tracking-tight">TechSphere</span>
           </div>

@@ -1,5 +1,6 @@
 import { parse } from 'url';
 import adminApproveUser from '../api_handlers/admin-approve-user.js';
+import adminContent from '../api_handlers/admin-content.js';
 import adminCertificates from '../api_handlers/admin-certificates.js';
 import adminCreateUser from '../api_handlers/admin-create-user.js';
 import adminResetPassword from '../api_handlers/admin-reset-password.js';
@@ -9,6 +10,7 @@ import certificateVerify from '../api_handlers/certificate-verify.js';
 import changePasswordWithOtp from '../api_handlers/change-password-with-otp.js';
 import cleanupUnapproved from '../api_handlers/cleanup-unapproved.js';
 import deleteUser from '../api_handlers/delete-user.js';
+import content from '../api_handlers/content.js';
 import profile from '../api_handlers/profile.js';
 import publicRegistrations from '../api_handlers/public-registrations.js';
 import registrationShare from '../api_handlers/registration-share.js';
@@ -19,6 +21,7 @@ import verifyOtp from '../api_handlers/verify-otp.js';
 
 const routes = {
   '/admin-approve-user': adminApproveUser,
+  '/admin-content': adminContent,
   '/admin-certificates': adminCertificates,
   '/admin-create-user': adminCreateUser,
   '/admin-reset-password': adminResetPassword,
@@ -28,6 +31,7 @@ const routes = {
   '/change-password-with-otp': changePasswordWithOtp,
   '/cleanup-unapproved': cleanupUnapproved,
   '/delete-user': deleteUser,
+  '/content': content,
   '/profile': profile,
   '/public-registrations': publicRegistrations,
   '/registration-share': registrationShare,

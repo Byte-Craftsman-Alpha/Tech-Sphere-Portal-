@@ -9,16 +9,20 @@ import Register from './pages/Register';
 import { AnimatePresence } from 'framer-motion';
 import { CacheProvider } from './context/CacheContext';
 import PageTransition from './components/PageTransition';
+import TopProgressBar from './components/TopProgressBar';
+import { usePerformanceMode } from './hooks/usePerformanceMode';
 
 import Dashboard from './pages/Dashboard';
 import Events from './pages/Events';
 import Challenges from './pages/Challenges';
+import News from './pages/News';
 import Profile from './pages/Profile';
 import Leaderboard from './pages/Leaderboard';
 import PublicRegistrations from './pages/PublicRegistrations';
 import CertificateVerify from './pages/CertificateVerify';
 import AdminEvents from './pages/Admin/Events';
 import AdminChallenges from './pages/Admin/Challenges';
+import AdminContent from './pages/Admin/Content';
 import AdminUsers from './pages/Admin/Users';
 import AdminTeams from './pages/Admin/Teams';
 import AdminCertificates from './pages/Admin/Certificates';
@@ -35,6 +39,7 @@ const App = () => {
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
+  const { reduceMotion } = usePerformanceMode();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -125,10 +130,12 @@ const App = () => {
     const path = location.pathname;
     if (path === '/home' || path === '/') return '/home';
     if (path.startsWith('/events')) return '/events';
+    if (path.startsWith('/news') || path.startsWith('/updates')) return '/news';
     if (path.startsWith('/challenges')) return '/challenges';
     if (path.startsWith('/leaderboard')) return '/leaderboard';
     if (path.startsWith('/profile')) return '/profile';
     if (path.startsWith('/admin/events')) return '/admin/events';
+    if (path.startsWith('/admin/content')) return '/admin/content';
     if (path.startsWith('/admin/challenges')) return '/admin/challenges';
     if (path.startsWith('/admin/users')) return '/admin/users';
     if (path.startsWith('/admin/teams')) return '/admin/teams';
@@ -179,7 +186,7 @@ const App = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#F4F6F8]">
+      <div data-reduce-motion={reduceMotion ? 'true' : 'false'} className="flex items-center justify-center min-h-screen bg-[#F4F6F8]">
         <div className="animate-spin text-indigo-600">
           <Icon icon="solar:restart-bold" fontSize={48} />
         </div>
@@ -189,15 +196,18 @@ const App = () => {
 
   if ((isAuthPage || isPublicShare || isPublicCert) && !session) {
     return (
-      <AnimatePresence mode="wait">
-        <Routes location={location} key={location.pathname}>
-          <Route path="/" element={<PageTransition><Landing /></PageTransition>} />
-          <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
-          <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
-          <Route path="/share/:token" element={<PageTransition><PublicRegistrations /></PageTransition>} />
-          <Route path="/certificates/verify" element={<PageTransition><CertificateVerify /></PageTransition>} />
-        </Routes>
-      </AnimatePresence>
+      <div data-reduce-motion={reduceMotion ? 'true' : 'false'}>
+        <TopProgressBar />
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route path="/" element={<PageTransition><Landing /></PageTransition>} />
+            <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+            <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
+            <Route path="/share/:token" element={<PageTransition><PublicRegistrations /></PageTransition>} />
+            <Route path="/certificates/verify" element={<PageTransition><CertificateVerify /></PageTransition>} />
+          </Routes>
+        </AnimatePresence>
+      </div>
     );
   }
 
@@ -231,6 +241,7 @@ const App = () => {
   const navItems = [
     { label: 'Home', icon: 'solar:home-2-bold', path: '/home' },
     { label: 'Events', icon: 'solar:calendar-minimalistic-bold', path: '/events' },
+    { label: 'News', icon: 'solar:notebook-bookmark-bold', path: '/news' },
     { label: 'Challenges', icon: 'solar:cup-bold', path: '/challenges' },
     { label: 'Leaderboard', icon: 'solar:cup-star-bold', path: '/leaderboard' },
     { label: 'Profile', icon: 'solar:user-circle-bold', path: '/profile' },
@@ -238,6 +249,7 @@ const App = () => {
 
   const adminItems = isAdmin ? [
     { label: 'Events Mgr', icon: 'solar:settings-minimalistic-bold', path: '/admin/events' },
+    { label: 'Content Hub', icon: 'solar:notebook-bold', path: '/admin/content' },
     { label: 'Pass Studio', icon: 'solar:ticket-bold', path: '/admin/passes' },
     { label: 'Challenges Mgr', icon: 'solar:cup-bold', path: '/admin/challenges' },
     { label: 'Users Mgr', icon: 'solar:users-group-rounded-bold', path: '/admin/users' },
@@ -253,7 +265,8 @@ const App = () => {
 
   return (
     <CacheProvider>
-      <div className="min-h-screen bg-[#F9FAFB] text-[#212B36] font-sans">
+      <div data-reduce-motion={reduceMotion ? 'true' : 'false'} className="min-h-screen bg-[#F9FAFB] text-[#212B36] font-sans">
+        <TopProgressBar />
         {/* Mobile Header */}
         <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-4 z-40">
           <button onClick={() => setIsSidebarOpen(true)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
@@ -376,12 +389,15 @@ const App = () => {
                 <Routes location={location} key={location.pathname}>
                   <Route path="/home" element={<PageTransition><Dashboard /></PageTransition>} />
                   <Route path="/events" element={<PageTransition><Events /></PageTransition>} />
+                  <Route path="/news" element={<PageTransition><News /></PageTransition>} />
+                  <Route path="/updates" element={<PageTransition><News /></PageTransition>} />
                   <Route path="/challenges" element={<PageTransition><Challenges /></PageTransition>} />
                   <Route path="/leaderboard" element={<PageTransition><Leaderboard /></PageTransition>} />
                   <Route path="/profile" element={<PageTransition><Profile /></PageTransition>} />
                   <Route path="/share/:token" element={<PageTransition><PublicRegistrations /></PageTransition>} />
                   <Route path="/certificates/verify" element={<PageTransition><CertificateVerify /></PageTransition>} />
                   <Route path="/admin/events" element={<PageTransition><AdminEvents /></PageTransition>} />
+                  <Route path="/admin/content" element={<PageTransition><AdminContent /></PageTransition>} />
                   <Route path="/admin/challenges" element={<PageTransition><AdminChallenges /></PageTransition>} />
                   <Route path="/admin/users" element={<PageTransition><AdminUsers /></PageTransition>} />
                   <Route path="/admin/teams" element={<PageTransition><AdminTeams /></PageTransition>} />
