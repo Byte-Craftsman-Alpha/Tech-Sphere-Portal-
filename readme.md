@@ -109,4 +109,5 @@ This project uses a single Vercel serverless entrypoint at `api/index.js`. All f
 | `ADMIN_EMAIL` | Email for the default admin account created by setup |
 | `ADMIN_PASSWORD` | Password for the default admin account created by setup |
 | `VITE_GOOGLE_CLIENT_ID` | Google OAuth Client ID |
+| `VITE_PUBLIC_APP_URL` | Public URL used by client-side OAuth redirects |
 | `DEV_MODE` | Set to "true" to log OTPs in development mode |
